@@ -19,4 +19,4 @@ jobs:
       - name: Inspect IPO Guru response shape
         env:
           IPO_API_KEY: ${{ secrets.IPO_API_KEY }}
-        run: python scripts/inspect_ipo_guru.py
+        run: python -m scripts.inspect_ipo_guru
