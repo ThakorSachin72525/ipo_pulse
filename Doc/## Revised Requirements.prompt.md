@@ -3,8 +3,10 @@
 Build an automation-first IPO tracking system:
 
 - Fetch IPO and GMP data from IPO Guru.
+- Use the IPO Guru Basic plan for the available IPO detail and current GMP fields.
 - Store IPO metadata in Supabase PostgreSQL.
-- Store GMP observations as append-only daily records.
+- Store GMP observations as append-only records in `ipo_gmp_history`.
+- Build our own day-wise GMP history from daily snapshots; do not depend on the paid GMP-history endpoint.
 - Record GMP-based predictions before listing.
 - Store actual listing prices after listing.
 - Calculate prediction errors and direction accuracy.
@@ -26,16 +28,21 @@ The existing PySide6 app remains operational but is not expanded during the init
 2. **IPO Guru API Integration**
    - Build an API provider adapter.
    - Validate response fields, dates, prices, GMP, and missing data.
+   - Use the Basic-plan IPO detail endpoint for lot size, dates, listing information, and other available fields.
+   - Do not require Standard/Pro-only GMP history endpoints.
    - Add sanitized response fixtures and API error tests.
 
 3. **Supabase Database**
+   - Current status: In progress. The initial schema migration is `supabase/migrations/001_initial_schema.sql`.
    - Add migrations for:
      - `ipos`
-     - `gmp_history`
+   - `ipo_gmp_history`
      - prediction records
      - evaluation results
    - Preserve GMP history without overwriting previous observations.
+   - Append one daily GMP snapshot from the current GMP endpoint.
    - Add idempotent repository operations.
+   - Add a read-only manual workflow to verify the Supabase connection and required tables.
 
 4. **Prediction Engine**
    - Calculate expected listing price, investment, profit, return, and predicted gain.
