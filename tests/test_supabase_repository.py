@@ -23,6 +23,20 @@ def test_build_ipo_payload_does_not_use_external_id():
     assert "id" not in payload
 
 
+def test_build_ipo_payload_maps_external_field_names():
+    payload = build_ipo_payload(
+        {
+            "name": "Example IPO",
+            "type": "mainboard",
+            "actual_listing_price": 125.0,
+        }
+    )
+
+    assert payload["ipo_name"] == "Example IPO"
+    assert payload["ipo_type"] == "mainboard"
+    assert payload["listing_price"] == 125.0
+
+
 def test_build_gmp_payload_normalizes_timestamp_to_utc():
     payload = build_gmp_payload(
         "owned-uuid",

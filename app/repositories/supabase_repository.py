@@ -37,6 +37,8 @@ def build_ipo_payload(record: dict[str, Any]) -> dict[str, Any]:
     """Select API fields that match the `ipos` table."""
     payload = {column: record.get(column) for column in IPO_COLUMNS}
     payload["ipo_name"] = record.get("ipo_name", record.get("name"))
+    payload["ipo_type"] = record.get("ipo_type", record.get("type"))
+    payload["listing_price"] = record.get("listing_price", record.get("actual_listing_price"))
     payload["source"] = record.get("source", "ipo_guru")
     if not payload["ipo_name"]:
         raise ValueError("IPO name is required")
