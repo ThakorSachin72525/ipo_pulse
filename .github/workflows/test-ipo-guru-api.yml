@@ -1,0 +1,22 @@
+name: Test IPO Guru API
+
+on:
+  workflow_dispatch:
+
+jobs:
+  inspect-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install project
+        run: python -m pip install ".[dev]"
+
+      - name: Inspect IPO Guru response shape
+        env:
+          IPO_API_KEY: ${{ secrets.IPO_API_KEY }}
+        run: python scripts/inspect_ipo_guru.py
