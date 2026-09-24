@@ -43,6 +43,7 @@ The existing PySide6 app remains operational but is not expanded during the init
    - Append one daily GMP snapshot from the current GMP endpoint.
    - Add idempotent repository operations.
    - Add a read-only manual workflow to verify the Supabase connection and required tables.
+   - Add a manual ingestion workflow that upserts IPO metadata and appends current GMP observations.
 
 4. **Prediction Engine**
    - Calculate expected listing price, investment, profit, return, and predicted gain.

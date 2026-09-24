@@ -86,11 +86,13 @@ Deliverables:
 - Same IPO/timestamp/source operation is idempotent.
 - Previous GMP observations are never overwritten.
 - Read-only GitHub Actions schema check in `.github/workflows/test-supabase.yml`.
+- Manual ingestion workflow in `.github/workflows/ingest-ipo-guru.yml`.
 
 Completion gate:
 
 - Migrations apply successfully in Supabase.
 - The manual Supabase workflow verifies both tables using `SUPABASE_URL` and `SUPABASE_KEY`.
+- The manual ingestion workflow upserts IPO metadata and appends current GMP observations using all three configured secrets.
 - Repository tests cover insert, update, duplicate, and historical-record behavior.
 - A repeated daily run does not create duplicate GMP observations.
 
