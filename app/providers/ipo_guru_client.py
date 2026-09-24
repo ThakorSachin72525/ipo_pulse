@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+from collections.abc import Mapping
 from typing import Any
 
 import requests
@@ -9,6 +11,39 @@ import requests
 
 class IPOGuruAPIError(RuntimeError):
     """Raised when IPO Guru returns an unsuccessful response."""
+
+
+def parse_number(value: Any) -> float | None:
+    """Convert a currency/percentage string to a number when possible."""
+    if value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    match = re.search(r"-?\d+(?:\.\d+)?", str(value).replace(",", ""))
+    return float(match.group()) if match else None
+
+
+def normalize_gmp_record(record: Mapping[str, Any]) -> dict[str, Any]:
+    """Normalize fields available from IPO Guru's GMP endpoint."""
+    gmp = record.get("gmp")
+    gmp_data = gmp if isinstance(gmp, Mapping) else {}
+    return {
+        "name": record.get("name"),
+        "issue_price": parse_number(record.get("issue_price")),
+        "price_band": record.get("price_band"),
+        "lot_size": record.get("lot_size"),
+        "open_date": record.get("open_date"),
+        "close_date": record.get("close_date"),
+        "listing_date": record.get("listing_date"),
+        "actual_listing_price": parse_number(record.get("actual_listing_price")),
+        "gmp": parse_number(gmp_data.get("price")),
+        "gmp_percent": parse_number(gmp_data.get("percentage")),
+        "estimated_listing_price": parse_number(gmp_data.get("estimated_listing_price")),
+        "gmp_updated_at": gmp_data.get("updated_at"),
+        "status": record.get("status"),
+        "type": record.get("type"),
+        "slug": record.get("slug"),
+    }
 
 
 class IPOGuruClient:

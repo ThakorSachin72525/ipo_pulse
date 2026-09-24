@@ -7,31 +7,12 @@ import os
 from collections.abc import Mapping
 from typing import Any
 
-from app.providers.ipo_guru_client import IPOGuruClient
+from app.providers.ipo_guru_client import IPOGuruClient, normalize_gmp_record
 
 
 def format_ipo_record(record: Mapping[str, Any]) -> dict[str, Any]:
     """Select the IPO fields currently available from the GMP endpoint."""
-    gmp = record.get("gmp")
-    gmp_data = gmp if isinstance(gmp, Mapping) else {}
-
-    return {
-        "name": record.get("name"),
-        "issue_price": record.get("issue_price"),
-        "price_band": record.get("price_band"),
-        "lot_size": record.get("lot_size"),
-        "open_date": record.get("open_date"),
-        "close_date": record.get("close_date"),
-        "listing_date": record.get("listing_date"),
-        "actual_listing_price": record.get("actual_listing_price"),
-        "gmp": gmp_data.get("price"),
-        "gmp_percent": gmp_data.get("percentage"),
-        "estimated_listing_price": gmp_data.get("estimated_listing_price"),
-        "gmp_updated_at": gmp_data.get("updated_at"),
-        "status": record.get("status"),
-        "type": record.get("type"),
-        "slug": record.get("slug"),
-    }
+    return normalize_gmp_record(record)
 
 
 def format_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
