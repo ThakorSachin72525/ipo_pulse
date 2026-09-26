@@ -91,7 +91,7 @@ def test_send_report_uses_gmail_oauth_and_fails_without_credentials(monkeypatch)
         def auth(self, mechanism, authobject, initial_response_ok=True):
             assert mechanism == "XOAUTH2"
             assert initial_response_ok is True
-            assert authobject(None) == (
+            assert authobject() == (
                 "user=reports@example.com\x01auth=Bearer short-lived-access-token\x01\x01"
             )
 

@@ -84,5 +84,5 @@ def send_report(
     message = build_report_message(sender, recipient, report)
     with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=ssl.create_default_context()) as smtp:
         auth_string = f"user={sender}\x01auth=Bearer {access_token}\x01\x01"
-        smtp.auth("XOAUTH2", lambda _challenge: auth_string, initial_response_ok=True)
+        smtp.auth("XOAUTH2", lambda _challenge=None: auth_string, initial_response_ok=True)
         smtp.send_message(message)
