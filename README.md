@@ -11,9 +11,9 @@ Cloud-based IPO tracking and GMP prediction pipeline for Indian IPOs.
 | 3. Supabase persistence | Complete | Schema migration verified and live GitHub Actions ingestion wrote 14 IPO rows and 14 GMP observations |
 | 4. Prediction pipeline | Complete | Latest pre-listing GMP selection, prediction payload logic, and live persistence are implemented and validated |
 | 5. Listing accuracy | In progress | Reconciliation and sample workflows are implemented; live Supabase validation remains |
-| 6. Daily report | Next | Report, accuracy summary, Gmail sender, and dry-run CLI are implemented; live delivery validation remains |
-| 7. GitHub Actions automation | In progress | Added a manual and scheduled end-to-end pipeline workflow |
-| 8. Dashboard | In progress | Read-only Streamlit dashboard for IPOs, GMP, predictions, and outcomes |
+| 6. Daily report | Validation queued | Report, accuracy summary, Gmail sender, and dry-run CLI are implemented; live delivery validation remains |
+| 7. GitHub Actions automation | Validation queued | Manual and scheduled end-to-end pipeline workflows are implemented; live validation remains |
+| 8. Dashboard | Complete | Deployed dashboard reads IPO Guru data through the versioned read-only Supabase policies |
 
 ## Goal
 
@@ -203,7 +203,7 @@ Completion gate:
 - Manual dry-run pipeline succeeds on the default branch.
 - Scheduled or manual-send pipeline succeeds after listing reconciliation is no longer blocked by provider throttling.
 
-### Phase 8: Dashboard - In progress
+### Phase 8: Dashboard - Complete
 
 Current implementation:
 
@@ -212,6 +212,7 @@ Current implementation:
 - Added direction accuracy and mean percentage error metrics.
 - Real IPO Guru data is shown by default; Phase 5 sample data is opt-in from the sidebar.
 - The dashboard never writes to Supabase.
+- Live validation completed: Streamlit Community Cloud reads IPO records from Supabase using migration 005.
 
 Run locally with:
 
@@ -231,6 +232,8 @@ SUPABASE_KEY = "..."
 ```
 
 4. Keep the app on the read-only dashboard path; it never writes to Supabase.
+
+Apply `supabase/migrations/005_dashboard_read_policies.sql` after migrations 001-004. It grants the unauthenticated `anon` role read-only access to the four dashboard tables. This makes dashboard data publicly readable, so the Streamlit app must use the publishable/anon key, never a Supabase secret/service-role key.
 
 The dashboard remains read-only until the cloud pipeline and reconciliation are stable.
 
