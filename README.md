@@ -219,6 +219,19 @@ Run locally with:
 SUPABASE_URL=... SUPABASE_KEY=... uv run streamlit run dashboard.py
 ```
 
+Deploy with Streamlit Community Cloud:
+
+1. Select the repository and branch to deploy.
+2. Set the main file to `dashboard.py`.
+3. Add these values in the app's **Secrets** panel using TOML syntax:
+
+```toml
+SUPABASE_URL = "..."
+SUPABASE_KEY = "..."
+```
+
+4. Keep the app on the read-only dashboard path; it never writes to Supabase.
+
 The dashboard remains read-only until the cloud pipeline and reconciliation are stable.
 
 ## Secrets

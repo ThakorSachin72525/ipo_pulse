@@ -83,6 +83,7 @@ The existing PySide6 app remains operational but is not expanded during the init
    - Current status: In progress. A read-only Streamlit dashboard is implemented.
    - Use Streamlit rather than extending the deferred PySide6 interface.
    - Add IPO overview, GMP history, actual-versus-predicted views, and charts.
+   - Deploy through Streamlit Community Cloud with `SUPABASE_URL` and `SUPABASE_KEY` configured as app secrets.
 
 ## First Step
 
