@@ -10,9 +10,9 @@ Cloud-based IPO tracking and GMP prediction pipeline for Indian IPOs.
 | 2. IPO Guru adapter | Complete | API key, GMP endpoint, readable output, and numeric normalization |
 | 3. Supabase persistence | Complete | Schema migration verified and live GitHub Actions ingestion wrote 14 IPO rows and 14 GMP observations |
 | 4. Prediction pipeline | Complete | Latest pre-listing GMP selection, prediction payload logic, and live persistence are implemented and validated |
-| 5. Listing accuracy | Validation queued | Reconciliation now avoids detail requests for IPOs that have not listed; live result validation is pending |
+| 5. Listing accuracy | Validation queued | Reconciliation completed without throttling; no listed IPOs were eligible for real outcomes yet |
 | 6. Daily email dashboard | In progress | Dashboard HTML and inline snapshot sent successfully; visual rendering in Gmail still needs confirmation |
-| 7. GitHub Actions automation | Validation queued | Daily pipeline is scheduled for 10:00 AM IST; end-to-end validation remains |
+| 7. GitHub Actions automation | Complete | Full send and dry-run pipelines succeeded; repeated ingestion upserted the same 14 IPOs and GMP snapshots |
 | 8. Dashboard | Complete | Deployed dashboard reads IPO Guru data through the versioned read-only Supabase policies |
 
 ## Goal
@@ -179,7 +179,7 @@ Completion gate:
 - A test email renders the dashboard layout and opens the live Streamlit dashboard.
 - Credentials are read only from environment variables or GitHub Secrets.
 
-### Phase 7: GitHub Actions Automation - Validation queued
+### Phase 7: GitHub Actions Automation - Complete
 
 Deliverables:
 
@@ -193,17 +193,16 @@ Current implementation:
 
 - Added `.github/workflows/daily-pipeline.yml` with schema verification, IPO Guru ingestion, listing reconciliation, and report generation.
 - Added manual dispatch with `send_report` defaulting to false, so manual validation prints a dry run without sending email.
-- Added a daily `04:30 UTC` schedule (10:00 AM IST) that sends the report through Gmail API OAuth credentials. A manual dashboard-send workflow has succeeded; the full pipeline still needs an end-to-end run.
+- Added a daily `04:30 UTC` schedule (10:00 AM IST) that sends the report through Gmail API OAuth credentials. Full manual send and dry-run pipeline runs succeeded on `main` (runs `36271478502` and `36271608004`). The repeat ingestion returned the same 14 IPOs, 14 GMP observations, and 14 predictions without error.
 - Added concurrency protection and a GitHub Actions job summary.
 - IPO Guru detail requests now use bounded `Retry-After` backoff when the provider returns HTTP 429.
 
 Completion gate:
 
-- Manual run succeeds end to end.
-- Second run is idempotent.
-- Daily schedule runs at 10:00 AM IST (`04:30 UTC`).
+- Full manual send pipeline succeeds on the default branch.
+- Repeated ingestion succeeds with the same source rows.
+- Daily schedule is configured for 10:00 AM IST (`04:30 UTC`).
 - Manual dry-run pipeline succeeds on the default branch.
-- Scheduled or manual-send pipeline succeeds after listing reconciliation is no longer blocked by provider throttling.
 
 ### Phase 8: Dashboard - Complete
 

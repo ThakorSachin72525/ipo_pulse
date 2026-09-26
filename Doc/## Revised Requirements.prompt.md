@@ -73,7 +73,7 @@ The existing PySide6 app remains operational but is not expanded during the init
    - Include a local dry-run mode.
 
 7. **GitHub Actions**
-   - Current status: End-to-end validation remains. Added `.github/workflows/daily-pipeline.yml` with manual dry-run, manual send, and a daily schedule at 10:00 AM IST (`04:30 UTC`); the standalone dashboard email workflow has succeeded.
+   - Current status: Complete. Full manual send and dry-run pipeline runs succeeded on `main` (runs `36271478502` and `36271608004`); repeated ingestion returned the same 14 IPOs, GMP observations, and predictions. Daily schedule is configured for 10:00 AM IST (`04:30 UTC`).
    - Schedule the pipeline daily at 10:00 AM IST (`04:30 UTC`).
    - Add manual dispatch.
    - Wire secrets securely.
