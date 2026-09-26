@@ -22,8 +22,10 @@ class Settings:
     ipo_api_key: str | None = None
     supabase_url: str | None = None
     supabase_key: str | None = None
-    email_username: str | None = None
-    email_password: str | None = None
+    email_sender: str | None = None
+    google_oauth_client_id: str | None = None
+    google_oauth_client_secret: str | None = None
+    google_oauth_refresh_token: str | None = None
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -33,8 +35,10 @@ class Settings:
             ipo_api_key=get_env("IPO_API_KEY"),
             supabase_url=get_env("SUPABASE_URL"),
             supabase_key=get_env("SUPABASE_KEY"),
-            email_username=get_env("EMAIL_USERNAME"),
-            email_password=get_env("EMAIL_PASSWORD"),
+            email_sender=get_env("EMAIL_SENDER"),
+            google_oauth_client_id=get_env("GOOGLE_OAUTH_CLIENT_ID"),
+            google_oauth_client_secret=get_env("GOOGLE_OAUTH_CLIENT_SECRET"),
+            google_oauth_refresh_token=get_env("GOOGLE_OAUTH_REFRESH_TOKEN"),
         )
 
 
