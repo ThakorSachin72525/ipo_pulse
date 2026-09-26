@@ -288,6 +288,55 @@ class SupabaseRepository:
         ]
         return current_ipos, recent_results
 
+    def get_dashboard_data(self, include_samples: bool = False) -> dict[str, list[dict[str, Any]]]:
+        """Return read-only joined data for the dashboard."""
+        ipo_response = self._client.table("ipos").select(
+            "ipo_id,ipo_name,issue_price,lot_size,status,listing_date,listing_price,source"
+        ).execute()
+        ipos = [
+            row for row in ipo_response.data
+            if include_samples or row.get("source") == "ipo_guru"
+        ]
+        ipo_ids = {row["ipo_id"] for row in ipos}
+        names = {row["ipo_id"]: row["ipo_name"] for row in ipos}
+
+        gmp_response = (
+            self._client.table("ipo_gmp_history")
+            .select("ipo_id,observation_at,gmp,gmp_percent,estimated_listing_price,source")
+            .order("observation_at", desc=False)
+            .execute()
+        )
+        gmp_history = [
+            {"name": names[row["ipo_id"]], **row}
+            for row in gmp_response.data
+            if row["ipo_id"] in ipo_ids
+        ]
+
+        prediction_response = (
+            self._client.table("ipo_predictions")
+            .select("ipo_id,gmp_date,gmp_value,expected_listing_price,expected_profit,expected_return,source")
+            .order("gmp_date", desc=False)
+            .execute()
+        )
+        predictions = [
+            {"name": names[row["ipo_id"]], **row}
+            for row in prediction_response.data
+            if row["ipo_id"] in ipo_ids
+        ]
+
+        result_response = (
+            self._client.table("ipo_listing_results")
+            .select("ipo_id,actual_listing_price,predicted_listing_price,prediction_error,percentage_error,direction_accuracy,created_at")
+            .order("created_at", desc=False)
+            .execute()
+        )
+        results = [
+            {"name": names[row["ipo_id"]], **row}
+            for row in result_response.data
+            if row["ipo_id"] in ipo_ids
+        ]
+        return {"ipos": ipos, "gmp_history": gmp_history, "predictions": predictions, "results": results}
+
     def verify_schema(self) -> tuple[str, ...]:
         """Run read-only queries against the required tables."""
         tables = ("ipos", "ipo_gmp_history", "ipo_predictions", "ipo_listing_results")

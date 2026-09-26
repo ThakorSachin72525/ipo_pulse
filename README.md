@@ -13,7 +13,7 @@ Cloud-based IPO tracking and GMP prediction pipeline for Indian IPOs.
 | 5. Listing accuracy | In progress | Reconciliation and sample workflows are implemented; live Supabase validation remains |
 | 6. Daily report | Next | Report, accuracy summary, Gmail sender, and dry-run CLI are implemented; live delivery validation remains |
 | 7. GitHub Actions automation | In progress | Added a manual and scheduled end-to-end pipeline workflow |
-| 8. Dashboard | Later | Add a dashboard after the pipeline is stable |
+| 8. Dashboard | In progress | Read-only Streamlit dashboard for IPOs, GMP, predictions, and outcomes |
 
 ## Goal
 
@@ -203,16 +203,23 @@ Completion gate:
 - Manual dry-run pipeline succeeds on the default branch.
 - Scheduled or manual-send pipeline succeeds after listing reconciliation is no longer blocked by provider throttling.
 
-### Phase 8: Dashboard - Later
+### Phase 8: Dashboard - In progress
 
-Possible views:
+Current implementation:
 
-- Current IPO overview.
-- GMP history.
-- Predicted versus actual listing price.
-- Historical accuracy statistics.
+- Added `dashboard.py` as a read-only Streamlit dashboard.
+- Added current IPO overview, GMP history chart, prediction history chart, and predicted-versus-actual listing results.
+- Added direction accuracy and mean percentage error metrics.
+- Real IPO Guru data is shown by default; Phase 5 sample data is opt-in from the sidebar.
+- The dashboard never writes to Supabase.
 
-Dashboard technology will be selected after the cloud pipeline is stable.
+Run locally with:
+
+```bash
+SUPABASE_URL=... SUPABASE_KEY=... uv run streamlit run dashboard.py
+```
+
+The dashboard remains read-only until the cloud pipeline and reconciliation are stable.
 
 ## Secrets
 

@@ -80,7 +80,8 @@ The existing PySide6 app remains operational but is not expanded during the init
    - Keep the end-to-end workflow blocked on provider rate limits until the reconciliation run is confirmed.
 
 8. **Dashboard Later**
-   - Decide between extending PySide6 or using Streamlit.
+   - Current status: In progress. A read-only Streamlit dashboard is implemented.
+   - Use Streamlit rather than extending the deferred PySide6 interface.
    - Add IPO overview, GMP history, actual-versus-predicted views, and charts.
 
 ## First Step
