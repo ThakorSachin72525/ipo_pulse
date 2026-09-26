@@ -147,6 +147,52 @@ def test_verify_schema_checks_for_slug_migration():
     assert ("ipos", "ipo_slug") in selections
 
 
+def test_dashboard_data_filters_samples_and_joins_ipo_names():
+    class Query:
+        def __init__(self, table_name):
+            self.table_name = table_name
+
+        def select(self, _columns):
+            return self
+
+        def eq(self, _column, _value):
+            return self
+
+        def order(self, _column, desc):
+            assert desc is False
+            return self
+
+        def execute(self):
+            if self.table_name == "ipos":
+                return type("Response", (), {"data": [
+                    {"ipo_id": "ipo-a", "ipo_name": "Alpha IPO", "source": "ipo_guru"},
+                    {"ipo_id": "sample-a", "ipo_name": "Sample IPO", "source": "sample"},
+                ]})()
+            if self.table_name == "ipo_gmp_history":
+                return type("Response", (), {"data": [
+                    {"ipo_id": "ipo-a", "gmp": 20.0},
+                    {"ipo_id": "sample-a", "gmp": 15.0},
+                ]})()
+            if self.table_name == "ipo_predictions":
+                return type("Response", (), {"data": [{
+                    "ipo_id": "ipo-a", "expected_listing_price": 120.0,
+                }]})()
+            return type("Response", (), {"data": [{
+                "ipo_id": "ipo-a", "actual_listing_price": 118.0,
+            }]})()
+
+    class Client:
+        def table(self, table_name):
+            return Query(table_name)
+
+    data = SupabaseRepository(Client()).get_dashboard_data()
+
+    assert [row["ipo_name"] for row in data["ipos"]] == ["Alpha IPO"]
+    assert data["gmp_history"] == [{"name": "Alpha IPO", "ipo_id": "ipo-a", "gmp": 20.0}]
+    assert data["predictions"][0]["name"] == "Alpha IPO"
+    assert data["results"][0]["actual_listing_price"] == 118.0
+
+
 def test_build_gmp_payload_normalizes_timestamp_to_utc():
     payload = build_gmp_payload(
         "owned-uuid",

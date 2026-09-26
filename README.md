@@ -12,8 +12,8 @@ Cloud-based IPO tracking and GMP prediction pipeline for Indian IPOs.
 | 4. Prediction pipeline | Complete | Latest pre-listing GMP selection, prediction payload logic, and live persistence are implemented and validated |
 | 5. Listing accuracy | In progress | Reconciliation and sample workflows are implemented; live Supabase validation remains |
 | 6. Daily report | Next | Report, accuracy summary, Gmail sender, and dry-run CLI are implemented; live delivery validation remains |
-| 7. GitHub Actions automation | Not started | Schedule and run the complete daily pipeline |
-| 8. Dashboard | Later | Add a dashboard after the pipeline is stable |
+| 7. GitHub Actions automation | In progress | Added a manual and scheduled end-to-end pipeline workflow |
+| 8. Dashboard | In progress | Read-only Streamlit dashboard for IPOs, GMP, predictions, and outcomes |
 
 ## Goal
 
@@ -25,7 +25,7 @@ The system will:
 - Record the GMP-based prediction used for an IPO.
 - Store actual listing prices after an IPO lists.
 - Calculate prediction error and direction accuracy.
-- Send a daily email report through Gmail SMTP.
+- Send a daily email report through the Gmail API.
 - Run automatically through GitHub Actions.
 
 GMP is treated as a prediction input, not as a guaranteed listing price.
@@ -159,17 +159,17 @@ Deliverables:
 - Recently listed IPO report section.
 - Overall accuracy statistics.
 - HTML/text email rendering.
-- Gmail SMTP delivery.
+- Gmail API delivery.
 - Local dry-run mode.
 
 Current implementation:
 
 - Added a Supabase-backed report query for current GMP snapshots and recent listing results.
 - Added overall direction-accuracy and mean percentage-error statistics.
-- Added HTML and plain-text email composition with Gmail SMTP XOAUTH2 using a Google OAuth refresh token.
+- Added HTML and plain-text email delivery through the Gmail API using a Google OAuth refresh token.
 - Added `python -m scripts.send_daily_report`; it prints a dry run by default and sends only with `--send`.
 - Maintains recipient addresses in `config/report_recipients.txt`, one address per line; delivery sends separate messages to protect recipient privacy.
-- Added tests for report data, MIME content, SMTP delivery, and the no-send dry-run default.
+- Added tests for report data, MIME content, Gmail API delivery, and the no-send dry-run default.
 - Live database and Gmail delivery validation is pending configured secrets.
 
 Completion gate:
@@ -177,7 +177,7 @@ Completion gate:
 - Dry-run report is readable without sending email.
 - Credentials are read only from environment variables or GitHub Secrets.
 
-### Phase 7: GitHub Actions Automation - Not Started
+### Phase 7: GitHub Actions Automation - In progress
 
 Deliverables:
 
@@ -187,22 +187,52 @@ Deliverables:
 - Failure logging and job summary.
 - Complete pipeline execution.
 
+Current implementation:
+
+- Added `.github/workflows/daily-pipeline.yml` with schema verification, IPO Guru ingestion, listing reconciliation, and report generation.
+- Added manual dispatch with `send_report` defaulting to false, so manual validation prints a dry run without sending email.
+- Added a daily `03:30 UTC` schedule that sends the report through Gmail API OAuth credentials.
+- Added concurrency protection and a GitHub Actions job summary.
+- IPO Guru detail requests now use bounded `Retry-After` backoff when the provider returns HTTP 429.
+
 Completion gate:
 
 - Manual run succeeds end to end.
 - Second run is idempotent.
 - Scheduled workflow is enabled only after manual validation.
+- Manual dry-run pipeline succeeds on the default branch.
+- Scheduled or manual-send pipeline succeeds after listing reconciliation is no longer blocked by provider throttling.
 
-### Phase 8: Dashboard - Later
+### Phase 8: Dashboard - In progress
 
-Possible views:
+Current implementation:
 
-- Current IPO overview.
-- GMP history.
-- Predicted versus actual listing price.
-- Historical accuracy statistics.
+- Added `dashboard.py` as a read-only Streamlit dashboard.
+- Added current IPO overview, GMP history chart, prediction history chart, and predicted-versus-actual listing results.
+- Added direction accuracy and mean percentage error metrics.
+- Real IPO Guru data is shown by default; Phase 5 sample data is opt-in from the sidebar.
+- The dashboard never writes to Supabase.
 
-Dashboard technology will be selected after the cloud pipeline is stable.
+Run locally with:
+
+```bash
+SUPABASE_URL=... SUPABASE_KEY=... uv run streamlit run dashboard.py
+```
+
+Deploy with Streamlit Community Cloud:
+
+1. Select the repository and branch to deploy.
+2. Set the main file to `dashboard.py`.
+3. Add these values in the app's **Secrets** panel using TOML syntax:
+
+```toml
+SUPABASE_URL = "..."
+SUPABASE_KEY = "..."
+```
+
+4. Keep the app on the read-only dashboard path; it never writes to Supabase.
+
+The dashboard remains read-only until the cloud pipeline and reconciliation are stable.
 
 ## Secrets
 
@@ -221,7 +251,7 @@ Later secrets:
 
 Secrets belong in GitHub repository settings under **Settings → Secrets and variables → Actions**. They must not be committed to the repository.
 Recipient addresses are maintained in the tracked file `config/report_recipients.txt`, one per line. Edit and commit that file when the list changes; it is not an Actions secret.
-The sender address identifies the Gmail mailbox; SMTP authentication uses the OAuth refresh token, not the mailbox password. Google can revoke refresh tokens, so reauthorization may occasionally be needed.
+The sender address identifies the Gmail mailbox; the Gmail API uses the OAuth refresh token, not the mailbox password. Google can revoke refresh tokens, so reauthorization may occasionally be needed.
 
 ## Google OAuth Setup
 

@@ -16,7 +16,7 @@ def main() -> int:
     parser.add_argument(
         "--send",
         action="store_true",
-        help="send the report by Gmail SMTP; without this flag the report is printed only",
+        help="send the report through the Gmail API; without this flag the report is printed only",
     )
     args = parser.parse_args()
 

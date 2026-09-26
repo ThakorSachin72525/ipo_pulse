@@ -1,0 +1,78 @@
+name: IPO Pulse Daily Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      send_report:
+        description: Send the daily report (otherwise print a dry run)
+        required: true
+        type: boolean
+        default: false
+  schedule:
+    - cron: "30 3 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ipo-pulse-daily-pipeline
+  cancel-in-progress: false
+
+env:
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+
+jobs:
+  daily-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install project
+        run: python -m pip install ".[dev]"
+
+      - name: Verify Supabase schema
+        run: python -m scripts.check_supabase
+
+      - name: Ingest IPO Guru data
+        env:
+          IPO_API_KEY: ${{ secrets.IPO_API_KEY }}
+        run: python -m scripts.ingest_ipo_guru
+
+      - name: Reconcile listing outcomes
+        env:
+          IPO_API_KEY: ${{ secrets.IPO_API_KEY }}
+        run: python -m scripts.reconcile_listings
+
+      - name: Print report dry run
+        if: ${{ github.event_name == 'workflow_dispatch' && !inputs.send_report }}
+        run: python -m scripts.send_daily_report
+
+      - name: Send daily report
+        if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.send_report) }}
+        env:
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+          GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+          GOOGLE_OAUTH_REFRESH_TOKEN: ${{ secrets.GOOGLE_OAUTH_REFRESH_TOKEN }}
+        run: python -m scripts.send_daily_report --send
+
+      - name: Write job summary
+        if: ${{ success() }}
+        run: |
+          {
+            echo "## IPO Pulse daily pipeline"
+            echo ""
+            echo "- Supabase schema verified"
+            echo "- IPO Guru ingestion completed"
+            echo "- Listing reconciliation completed"
+            if [[ "${{ github.event_name }}" == "schedule" || "${{ inputs.send_report }}" == "true" ]]; then
+              echo "- Daily report sent"
+            else
+              echo "- Dry-run report printed; no email sent"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
