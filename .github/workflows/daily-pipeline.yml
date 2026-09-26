@@ -9,7 +9,8 @@ on:
         type: boolean
         default: false
   schedule:
-    - cron: "30 3 * * *"
+    # GitHub Actions cron uses UTC; 04:30 UTC is 10:00 AM India Standard Time.
+    - cron: "30 4 * * *"
 
 permissions:
   contents: read

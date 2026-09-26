@@ -73,8 +73,8 @@ The existing PySide6 app remains operational but is not expanded during the init
    - Include a local dry-run mode.
 
 7. **GitHub Actions**
-   - Current status: Validation queued until Phase 5 reconciliation succeeds. Added `.github/workflows/daily-pipeline.yml` with manual dry-run, manual send, and a daily schedule.
-   - Add daily scheduling.
+   - Current status: Validation queued until Phase 5 reconciliation succeeds. Added `.github/workflows/daily-pipeline.yml` with manual dry-run, manual send, and a daily schedule at 10:00 AM IST (`04:30 UTC`).
+   - Schedule the pipeline daily at 10:00 AM IST (`04:30 UTC`).
    - Add manual dispatch.
    - Wire secrets securely.
    - Add logging and failure reporting.
