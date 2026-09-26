@@ -72,10 +72,12 @@ The existing PySide6 app remains operational but is not expanded during the init
    - Include a local dry-run mode.
 
 7. **GitHub Actions**
+   - Current status: In progress. Added `.github/workflows/daily-pipeline.yml` with manual dry-run, manual send, and a daily schedule.
    - Add daily scheduling.
    - Add manual dispatch.
    - Wire secrets securely.
    - Add logging and failure reporting.
+   - Keep the end-to-end workflow blocked on provider rate limits until the reconciliation run is confirmed.
 
 8. **Dashboard Later**
    - Decide between extending PySide6 or using Streamlit.

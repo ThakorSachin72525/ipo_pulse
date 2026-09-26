@@ -12,7 +12,7 @@ Cloud-based IPO tracking and GMP prediction pipeline for Indian IPOs.
 | 4. Prediction pipeline | Complete | Latest pre-listing GMP selection, prediction payload logic, and live persistence are implemented and validated |
 | 5. Listing accuracy | In progress | Reconciliation and sample workflows are implemented; live Supabase validation remains |
 | 6. Daily report | Next | Report, accuracy summary, Gmail sender, and dry-run CLI are implemented; live delivery validation remains |
-| 7. GitHub Actions automation | Not started | Schedule and run the complete daily pipeline |
+| 7. GitHub Actions automation | In progress | Added a manual and scheduled end-to-end pipeline workflow |
 | 8. Dashboard | Later | Add a dashboard after the pipeline is stable |
 
 ## Goal
@@ -177,7 +177,7 @@ Completion gate:
 - Dry-run report is readable without sending email.
 - Credentials are read only from environment variables or GitHub Secrets.
 
-### Phase 7: GitHub Actions Automation - Not Started
+### Phase 7: GitHub Actions Automation - In progress
 
 Deliverables:
 
@@ -187,11 +187,21 @@ Deliverables:
 - Failure logging and job summary.
 - Complete pipeline execution.
 
+Current implementation:
+
+- Added `.github/workflows/daily-pipeline.yml` with schema verification, IPO Guru ingestion, listing reconciliation, and report generation.
+- Added manual dispatch with `send_report` defaulting to false, so manual validation prints a dry run without sending email.
+- Added a daily `03:30 UTC` schedule that sends the report through Gmail API OAuth credentials.
+- Added concurrency protection and a GitHub Actions job summary.
+- IPO Guru detail requests now use bounded `Retry-After` backoff when the provider returns HTTP 429.
+
 Completion gate:
 
 - Manual run succeeds end to end.
 - Second run is idempotent.
 - Scheduled workflow is enabled only after manual validation.
+- Manual dry-run pipeline succeeds on the default branch.
+- Scheduled or manual-send pipeline succeeds after listing reconciliation is no longer blocked by provider throttling.
 
 ### Phase 8: Dashboard - Later
 
