@@ -2,7 +2,11 @@ from datetime import datetime, timezone
 
 import pytest
 
-from app.repositories.supabase_repository import build_gmp_payload, build_ipo_payload
+from app.repositories.supabase_repository import (
+    SupabaseRepository,
+    build_gmp_payload,
+    build_ipo_payload,
+)
 
 
 def test_build_ipo_payload_does_not_use_external_id():
@@ -35,6 +39,112 @@ def test_build_ipo_payload_maps_external_field_names():
     assert payload["ipo_name"] == "Example IPO"
     assert payload["ipo_type"] == "mainboard"
     assert payload["listing_price"] == 125.0
+
+
+def test_build_ipo_payload_preserves_provider_slug_for_detail_lookup():
+    payload = build_ipo_payload(
+        {"name": "Example IPO", "slug": "example-ipo", "source": "ipo_guru"}
+    )
+
+    assert payload["ipo_slug"] == "example-ipo"
+
+
+def test_repository_returns_all_prediction_snapshots_for_an_ipo():
+    class Query:
+        def __init__(self):
+            self.predicates = []
+
+        def select(self, columns):
+            assert columns == "*"
+            return self
+
+        def eq(self, column, value):
+            self.predicates.append((column, value))
+            return self
+
+        def order(self, column, desc):
+            self.predicates.append((column, desc))
+            return self
+
+        def execute(self):
+            return type("Response", (), {"data": [
+                {"prediction_id": "p1", "gmp_date": "2026-09-24"},
+                {"prediction_id": "p2", "gmp_date": "2026-09-25"},
+            ]})()
+
+    query = Query()
+
+    class Client:
+        def table(self, name):
+            assert name == "ipo_predictions"
+            return query
+
+    predictions = SupabaseRepository(Client()).get_predictions_for_ipo("ipo-a")
+
+    assert [row["prediction_id"] for row in predictions] == ["p1", "p2"]
+    assert ("ipo_id", "ipo-a") in query.predicates
+    assert ("gmp_date", False) in query.predicates
+
+
+def test_repository_lists_provider_records_for_reconciliation():
+    class Query:
+        def __init__(self):
+            self.source = None
+
+        def select(self, columns):
+            assert "ipo_slug" in columns
+            return self
+
+        def eq(self, column, value):
+            self.source = (column, value)
+            return self
+
+        def execute(self):
+            assert self.source == ("source", "ipo_guru")
+            return type("Response", (), {"data": [{"ipo_slug": "example-ipo"}]})()
+
+    query = Query()
+
+    class Client:
+        def table(self, name):
+            assert name == "ipos"
+            return query
+
+    assert SupabaseRepository(Client()).get_ipo_records_for_reconciliation() == [
+        {"ipo_slug": "example-ipo"}
+    ]
+
+
+def test_verify_schema_checks_for_slug_migration():
+    selections = []
+
+    class Query:
+        def __init__(self, table_name):
+            self.table_name = table_name
+
+        def select(self, columns):
+            selections.append((self.table_name, columns))
+            return self
+
+        def limit(self, _count):
+            return self
+
+        def execute(self):
+            return type("Response", (), {"data": []})()
+
+    class Client:
+        def table(self, name):
+            return Query(name)
+
+    repository = SupabaseRepository(Client())
+
+    assert repository.verify_schema() == (
+        "ipos",
+        "ipo_gmp_history",
+        "ipo_predictions",
+        "ipo_listing_results",
+    )
+    assert ("ipos", "ipo_slug") in selections
 
 
 def test_build_gmp_payload_normalizes_timestamp_to_utc():
