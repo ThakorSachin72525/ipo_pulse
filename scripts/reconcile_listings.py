@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from app.config import Settings
 from app.models.ipo_model import IPO, PredictionRecord
-from app.providers.ipo_guru_client import IPOGuruClient, normalize_ipo_detail
+from app.providers.ipo_guru_client import IPOGuruClient, normalize_ipo_detail, parse_number
 from app.repositories.supabase_repository import SupabaseRepository
+
+
+PROVIDER_TIMEZONE = ZoneInfo("Asia/Kolkata")
 
 
 def parse_date(value: Any) -> date | None:
@@ -50,19 +54,25 @@ def prediction_from_record(record: dict[str, Any]) -> PredictionRecord:
 def reconcile_listings(client: IPOGuruClient, repository: SupabaseRepository) -> tuple[int, int]:
     ipo_count = 0
     result_count = 0
+    today = datetime.now(PROVIDER_TIMEZONE).date()
 
     for candidate in repository.get_ipo_records_for_reconciliation():
         slug = candidate.get("ipo_slug")
-        if not slug:
+        listing_date = parse_date(candidate.get("listing_date"))
+        # Avoid spending detail requests on IPOs that have not listed yet,
+        # or whose scheduled listing date is unavailable.
+        if not slug or listing_date is None or listing_date > today:
             continue
 
         predictions = repository.get_predictions_for_ipo(candidate["ipo_id"])
         if not predictions:
             continue
 
-        detail = normalize_ipo_detail(client.fetch_ipo_detail(slug))
-        actual_listing_price = detail.get("actual_listing_price")
-        listing_date = parse_date(detail.get("listing_date") or candidate.get("listing_date"))
+        actual_listing_price = parse_number(candidate.get("listing_price"))
+        if actual_listing_price is None or actual_listing_price <= 0:
+            detail = normalize_ipo_detail(client.fetch_ipo_detail(slug))
+            actual_listing_price = detail.get("actual_listing_price")
+            listing_date = parse_date(detail.get("listing_date")) or listing_date
         if actual_listing_price is None or listing_date is None:
             continue
 

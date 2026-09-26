@@ -10,8 +10,8 @@ Cloud-based IPO tracking and GMP prediction pipeline for Indian IPOs.
 | 2. IPO Guru adapter | Complete | API key, GMP endpoint, readable output, and numeric normalization |
 | 3. Supabase persistence | Complete | Schema migration verified and live GitHub Actions ingestion wrote 14 IPO rows and 14 GMP observations |
 | 4. Prediction pipeline | Complete | Latest pre-listing GMP selection, prediction payload logic, and live persistence are implemented and validated |
-| 5. Listing accuracy | Validation queued | Reconciliation is implemented; live validation waits for the IPO Guru daily quota reset |
-| 6. Daily email dashboard | In progress | Dashboard-style HTML email is implemented; Gmail rendering still needs validation |
+| 5. Listing accuracy | Validation queued | Reconciliation now avoids detail requests for IPOs that have not listed; live result validation is pending |
+| 6. Daily email dashboard | In progress | Dashboard HTML and inline snapshot sent successfully; visual rendering in Gmail still needs confirmation |
 | 7. GitHub Actions automation | Validation queued | Daily pipeline is scheduled for 10:00 AM IST; end-to-end validation remains |
 | 8. Dashboard | Complete | Deployed dashboard reads IPO Guru data through the versioned read-only Supabase policies |
 
@@ -134,7 +134,7 @@ Current implementation:
 
 - Added the listing-result payload builder and repository write path for storing actual-versus-predicted metrics.
 - Added regression tests covering the positive and negative direction cases and the expected accuracy math.
-- The reconciliation implementation is complete locally; live Supabase validation remains pending.
+- The reconciliation implementation is complete locally; live Supabase validation remains pending. It skips IPOs whose listing date is unknown or in the future, uses stored listing prices when available, and requests detail only for listed IPOs that still need an actual price.
 - Added `supabase/migrations/003_listing_results_schema.sql` for prediction outcomes.
 - Added `scripts/seed_listing_accuracy_sample.py` and a manual workflow to insert one idempotent synthetic IPO, GMP observation, prediction, and listing result, all tagged with source `ipo_pulse_phase5_sample`.
 - Normal report queries exclude non-IPO-Guru sources so the synthetic row does not affect production report metrics.
@@ -167,7 +167,7 @@ Current implementation:
 
 - Added a Supabase-backed report query for current GMP snapshots and recent listing results.
 - Added overall direction-accuracy and mean percentage-error statistics.
-- Added a dashboard-style HTML email with KPI cards, IPO and listing tables, an inline PNG snapshot, a live-dashboard link, and a plain-text fallback. Gmail rendering still needs validation.
+- Added a dashboard-style HTML email with KPI cards, IPO and listing tables, an inline PNG snapshot, a live-dashboard link, and a plain-text fallback. Gmail accepted delivery to both configured recipients; visual rendering still needs confirmation in the mailbox.
 - Added `python -m scripts.send_daily_report`; it prints a dry run by default and sends only with `--send`.
 - Maintains recipient addresses in `config/report_recipients.txt`, one address per line; delivery sends separate messages to protect recipient privacy.
 - Added tests for report data, MIME content, Gmail API delivery, and the no-send dry-run default.
@@ -193,7 +193,7 @@ Current implementation:
 
 - Added `.github/workflows/daily-pipeline.yml` with schema verification, IPO Guru ingestion, listing reconciliation, and report generation.
 - Added manual dispatch with `send_report` defaulting to false, so manual validation prints a dry run without sending email.
-- Added a daily `04:30 UTC` schedule (10:00 AM IST) that sends the report through Gmail API OAuth credentials.
+- Added a daily `04:30 UTC` schedule (10:00 AM IST) that sends the report through Gmail API OAuth credentials. A manual dashboard-send workflow has succeeded; the full pipeline still needs an end-to-end run.
 - Added concurrency protection and a GitHub Actions job summary.
 - IPO Guru detail requests now use bounded `Retry-After` backoff when the provider returns HTTP 429.
 

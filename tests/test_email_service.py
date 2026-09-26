@@ -107,7 +107,7 @@ def test_send_report_uses_gmail_api_and_fails_without_credentials(monkeypatch):
     assert timeout == 30
     message = base64.urlsafe_b64decode(payload["raw"])
     assert b"To: owner@example.com" in message
-    assert b"Subject: IPO Pulse Daily Report" in message
+    assert b"Subject: IPO Pulse Daily Dashboard" in message
     assert b"IPO Pulse Daily Report" in message
 
     with pytest.raises(ValueError, match="email credentials and recipient"):

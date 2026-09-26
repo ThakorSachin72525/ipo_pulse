@@ -1,4 +1,5 @@
-from datetime import date
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import pytest
 
@@ -256,6 +257,7 @@ def test_reconciliation_scores_each_pre_listing_prediction(monkeypatch, capsys):
                 "ipo_id": "ipo-a",
                 "ipo_name": "Example IPO",
                 "ipo_slug": "example-ipo",
+                "listing_date": "2026-09-25",
             }]
 
         def get_predictions_for_ipo(self, ipo_id):
@@ -351,6 +353,32 @@ def test_reconciliation_skips_detail_without_actual_listing_price():
 
         def upsert_listing_result(self, *_args):
             pytest.fail("incomplete listing detail must not create an outcome")
+
+    assert reconcile_listings.reconcile_listings(Client(), Repository()) == (0, 0)
+
+
+def test_reconciliation_skips_unlisted_ipo_without_detail_request():
+    class Client:
+        def fetch_ipo_detail(self, _slug):
+            pytest.fail("future IPOs must not use a detail API request")
+
+    class Repository:
+        def get_ipo_records_for_reconciliation(self):
+            return [{
+                "ipo_id": "ipo-future",
+                "ipo_name": "Future IPO",
+                "ipo_slug": "future-ipo",
+                "listing_date": (datetime.now(ZoneInfo("Asia/Kolkata")).date() + timedelta(days=1)).isoformat(),
+            }]
+
+        def get_predictions_for_ipo(self, _ipo_id):
+            return [{"prediction_id": "prediction-future"}]
+
+        def update_listing_data(self, *_args):
+            pytest.fail("future IPO must not be updated")
+
+        def upsert_listing_result(self, *_args):
+            pytest.fail("future IPO must not create an outcome")
 
     assert reconcile_listings.reconcile_listings(Client(), Repository()) == (0, 0)
 
