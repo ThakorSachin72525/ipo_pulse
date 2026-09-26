@@ -13,6 +13,7 @@ Build an automation-first IPO tracking system:
 - Generate and email daily reports through Gmail SMTP.
 - Run automatically through GitHub Actions.
 - Keep all credentials in GitHub Actions Secrets.
+- Maintain report recipient addresses in the tracked file `config/report_recipients.txt`; store Google OAuth client credentials and refresh token in GitHub Actions Secrets, never the mailbox password.
 - Defer the existing PySide6 interface until the cloud pipeline is stable.
 
 The existing PySide6 app remains operational but is not expanded during the initial pipeline phases.
@@ -33,7 +34,7 @@ The existing PySide6 app remains operational but is not expanded during the init
    - Add sanitized response fixtures and API error tests.
 
 3. **Supabase Database**
-   - Current status: In progress. The initial schema migration is `supabase/migrations/001_initial_schema.sql`.
+   - Current status: Complete. The initial schema migration is `supabase/migrations/001_initial_schema.sql` and it has passed live GitHub Actions validation.
    - Add migrations for:
      - `ipos`
    - `ipo_gmp_history`
@@ -44,17 +45,28 @@ The existing PySide6 app remains operational but is not expanded during the init
    - Add idempotent repository operations.
    - Add a read-only manual workflow to verify the Supabase connection and required tables.
    - Add a manual ingestion workflow that upserts IPO metadata and appends current GMP observations.
+   - Live validation result: the ingestion workflow successfully wrote 14 IPO rows and 14 GMP observations to Supabase.
 
 4. **Prediction Engine**
+   - Current status: Complete. The latest pre-listing GMP selection, prediction payload logic, and live persistence path are implemented and validated locally.
+   - Ignore GMP rows for other IPOs, and do not create predictions for invalid issue prices or dates on/after listing.
    - Calculate expected listing price, investment, profit, return, and predicted gain.
    - Store the GMP observation used for each prediction.
 
 5. **Listing Accuracy**
+   - Current status: In progress. Listing detail fetching, persisted slug lookup, and per-prediction outcome reconciliation are implemented and locally tested; live Supabase validation remains.
+   - Add a manually dispatched, repeatable synthetic database sample tagged `ipo_pulse_phase5_sample` to validate the IPO/GMP/prediction/result relationship.
+   - Fetch actual listing price from the IPO Guru Basic-plan detail endpoint using each saved IPO slug.
+   - Store a result for every saved prediction dated before listing without rewriting prediction records.
+   - Add migrations for prediction rows, listing outcomes, and the IPO Guru slug; apply them in order before reconciliation.
    - Record actual listing prices.
    - Calculate absolute error, percentage error, actual gain, and direction accuracy.
    - Handle missing GMP or missing listing data safely.
 
 6. **Daily Email Report**
+   - Current status: Next. Supabase-backed report data, overall accuracy summary, HTML/text email composition, Gmail SMTP XOAUTH2 sender using Google OAuth refresh tokens, and dry-run CLI are implemented and tested locally; live credential-backed delivery validation remains.
+   - Maintain recipient addresses in `config/report_recipients.txt`, one per line, and send separate messages per recipient.
+   - Generate a Gmail-scoped refresh token with offline access; do not store the mailbox password.
    - Generate current IPO, historical result, and overall statistics sections.
    - Add Gmail SMTP delivery.
    - Include a local dry-run mode.
