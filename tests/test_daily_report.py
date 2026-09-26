@@ -19,12 +19,12 @@ def test_build_daily_report_includes_active_ipos_and_accuracy_summary():
         ],
     )
 
-    assert "IPO Pulse Daily Report" in report
+    assert "IPO Pulse Daily Dashboard" in report
     assert "Alpha IPO" in report
     assert "Beta IPO" in report
     assert "Gamma IPO" in report
     assert "Direction" in report
-    assert "report" in report.lower()
+    assert "dashboard" in report.lower()
     assert "Direction accuracy: 1/2 (50.0%)" in report
     assert "Mean percentage error: 13.42%" in report
 

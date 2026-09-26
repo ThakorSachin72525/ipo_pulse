@@ -10,7 +10,7 @@ Build an automation-first IPO tracking system:
 - Record GMP-based predictions before listing.
 - Store actual listing prices after listing.
 - Calculate prediction errors and direction accuracy.
-- Generate and email daily reports through the Gmail API.
+- Generate and email a dashboard-style HTML email with an inline PNG snapshot and link to the live Streamlit dashboard; retain a plain-text fallback.
 - Run automatically through GitHub Actions.
 - Keep all credentials in GitHub Actions Secrets.
 - Maintain report recipient addresses in the tracked file `config/report_recipients.txt`; store Google OAuth client credentials and refresh token in GitHub Actions Secrets, never the mailbox password.
@@ -54,7 +54,7 @@ The existing PySide6 app remains operational but is not expanded during the init
    - Store the GMP observation used for each prediction.
 
 5. **Listing Accuracy**
-   - Current status: In progress. Listing detail fetching, persisted slug lookup, and per-prediction outcome reconciliation are implemented and locally tested; live Supabase validation remains.
+   - Current status: Validation queued until the IPO Guru daily quota resets. Listing detail fetching, persisted slug lookup, and per-prediction outcome reconciliation are implemented; live Supabase validation remains.
    - Add a manually dispatched, repeatable synthetic database sample tagged `ipo_pulse_phase5_sample` to validate the IPO/GMP/prediction/result relationship.
    - Fetch actual listing price from the IPO Guru Basic-plan detail endpoint using each saved IPO slug.
    - Store a result for every saved prediction dated before listing without rewriting prediction records.
@@ -63,24 +63,25 @@ The existing PySide6 app remains operational but is not expanded during the init
    - Calculate absolute error, percentage error, actual gain, and direction accuracy.
    - Handle missing GMP or missing listing data safely.
 
-6. **Daily Email Report**
-   - Current status: Next. Supabase-backed report data, overall accuracy summary, HTML/text email composition, Gmail API sender using Google OAuth refresh tokens, and dry-run CLI are implemented and tested locally; live credential-backed delivery validation remains.
+6. **Daily Email Dashboard**
+   - Current status: In progress. The sender now builds a dashboard-style HTML email with KPI cards, IPO/outcome tables, an inline PNG snapshot, a live Streamlit link, and a plain-text fallback. Validate the rendered email in Gmail.
    - Maintain recipient addresses in `config/report_recipients.txt`, one per line, and send separate messages per recipient.
    - Generate a Gmail-scoped refresh token with offline access; do not store the mailbox password.
-   - Generate current IPO, historical result, and overall statistics sections.
+   - Show current IPOs, recent listing outcomes, and overall statistics in the email dashboard.
+   - Link the email to the interactive Streamlit dashboard.
    - Add Gmail API delivery.
    - Include a local dry-run mode.
 
 7. **GitHub Actions**
-   - Current status: In progress. Added `.github/workflows/daily-pipeline.yml` with manual dry-run, manual send, and a daily schedule.
+   - Current status: Validation queued until Phase 5 reconciliation succeeds. Added `.github/workflows/daily-pipeline.yml` with manual dry-run, manual send, and a daily schedule.
    - Add daily scheduling.
    - Add manual dispatch.
    - Wire secrets securely.
    - Add logging and failure reporting.
    - Keep the end-to-end workflow blocked on provider rate limits until the reconciliation run is confirmed.
 
-8. **Dashboard Later**
-   - Current status: In progress. A read-only Streamlit dashboard is implemented.
+8. **Dashboard**
+   - Current status: Complete. The read-only Streamlit dashboard is deployed and reads Supabase data through migration 005.
    - Use Streamlit rather than extending the deferred PySide6 interface.
    - Add IPO overview, GMP history, actual-versus-predicted views, and charts.
    - Deploy through Streamlit Community Cloud with `SUPABASE_URL` and `SUPABASE_KEY` configured as app secrets.

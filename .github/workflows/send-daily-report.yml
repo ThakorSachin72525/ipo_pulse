@@ -1,10 +1,10 @@
-name: Send Daily IPO Report
+name: Send Daily IPO Dashboard
 
 on:
   workflow_dispatch:
     inputs:
       send:
-        description: Actually send email (otherwise print a dry run)
+        description: Actually send dashboard email (otherwise print a dry run)
         required: true
         type: boolean
         default: false

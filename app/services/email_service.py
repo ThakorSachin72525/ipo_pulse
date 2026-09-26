@@ -32,17 +32,24 @@ def load_recipients(path: Path) -> list[str]:
     return recipients
 
 
-def build_report_message(sender: str, recipient: str, report: str) -> EmailMessage:
+def build_report_message(
+    sender: str, recipient: str, report: str, html_report: str | None = None, snapshot_png: bytes | None = None
+) -> EmailMessage:
     message = EmailMessage()
-    message["Subject"] = "IPO Pulse Daily Report"
+    message["Subject"] = "IPO Pulse Daily Dashboard"
     message["From"] = sender
     message["To"] = recipient
     message.set_content(report)
-    escaped_report = html.escape(report)
-    message.add_alternative(
-        f"<!doctype html><html><body><pre>{escaped_report}</pre></body></html>",
-        subtype="html",
+    html_body = html_report or (
+        "<!doctype html><html><body style=\"font-family:Arial,sans-serif\">"
+        + html.escape(report).replace("\n", "<br>")
+        + "</body></html>"
     )
+    message.add_alternative(html_body, subtype="html")
+    if snapshot_png:
+        message.get_body(preferencelist=("html",)).add_related(
+            snapshot_png, maintype="image", subtype="png", cid="<ipo-pulse-dashboard>"
+        )
     return message
 
 
@@ -75,12 +82,14 @@ def send_report(
     client_secret: str,
     refresh_token: str,
     recipient: str,
+    html_report: str | None = None,
+    snapshot_png: bytes | None = None,
 ) -> None:
     if not all((sender, client_id, client_secret, refresh_token, recipient)):
         raise ValueError("email credentials and recipient are required")
 
     access_token = fetch_google_access_token(client_id, client_secret, refresh_token)
-    message = build_report_message(sender, recipient, report)
+    message = build_report_message(sender, recipient, report, html_report, snapshot_png)
     raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode("ascii")
     response = requests.post(
         "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",

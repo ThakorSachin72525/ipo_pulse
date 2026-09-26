@@ -36,7 +36,7 @@ def test_build_report_message_includes_plain_text_and_html():
     )
 
     assert isinstance(message, EmailMessage)
-    assert message["Subject"] == "IPO Pulse Daily Report"
+    assert message["Subject"] == "IPO Pulse Daily Dashboard"
     assert message.get_body(preferencelist=("plain",)).get_content() == "IPO Pulse Daily Report\nAlpha IPO\n"
     html_body = message.get_body(preferencelist=("html",))
     assert html_body is not None

@@ -10,9 +10,9 @@ Cloud-based IPO tracking and GMP prediction pipeline for Indian IPOs.
 | 2. IPO Guru adapter | Complete | API key, GMP endpoint, readable output, and numeric normalization |
 | 3. Supabase persistence | Complete | Schema migration verified and live GitHub Actions ingestion wrote 14 IPO rows and 14 GMP observations |
 | 4. Prediction pipeline | Complete | Latest pre-listing GMP selection, prediction payload logic, and live persistence are implemented and validated |
-| 5. Listing accuracy | In progress | Reconciliation and sample workflows are implemented; live Supabase validation remains |
-| 6. Daily report | Validation queued | Report, accuracy summary, Gmail sender, and dry-run CLI are implemented; live delivery validation remains |
-| 7. GitHub Actions automation | Validation queued | Manual and scheduled end-to-end pipeline workflows are implemented; live validation remains |
+| 5. Listing accuracy | Validation queued | Reconciliation is implemented; live validation waits for the IPO Guru daily quota reset |
+| 6. Daily email dashboard | In progress | Dashboard-style HTML email is implemented; Gmail rendering still needs validation |
+| 7. GitHub Actions automation | Validation queued | Manual and scheduled pipeline workflows are implemented; end-to-end validation remains |
 | 8. Dashboard | Complete | Deployed dashboard reads IPO Guru data through the versioned read-only Supabase policies |
 
 ## Goal
@@ -25,7 +25,7 @@ The system will:
 - Record the GMP-based prediction used for an IPO.
 - Store actual listing prices after an IPO lists.
 - Calculate prediction error and direction accuracy.
-- Send a daily email report through the Gmail API.
+- Send a daily dashboard email through the Gmail API.
 - Run automatically through GitHub Actions.
 
 GMP is treated as a prediction input, not as a guaranteed listing price.
@@ -121,7 +121,7 @@ Completion gate:
 - Historical predictions remain tied to their original GMP observation.
 - Live ingestion writes a prediction row for each GMP snapshot it persists.
 
-### Phase 5: Listing Accuracy - In progress
+### Phase 5: Listing Accuracy - Validation queued
 
 Deliverables:
 
@@ -151,14 +151,15 @@ Completion gate:
 
 Apply `supabase/migrations/002_prediction_schema.sql`, `003_listing_results_schema.sql`, and `004_ipo_guru_slug.sql` in order in the Supabase SQL Editor before running the prediction ingestion or Phase 5 workflows.
 
-### Phase 6: Daily Report - Next
+### Phase 6: Daily Email Dashboard - In progress
 
 Deliverables:
 
-- Current IPO report section.
-- Recently listed IPO report section.
+- Current IPO overview and recent listing outcomes.
 - Overall accuracy statistics.
-- HTML/text email rendering.
+- Dashboard-style HTML email with a link to the live Streamlit dashboard.
+- Inline PNG snapshot of the same dashboard data.
+- Plain-text email fallback.
 - Gmail API delivery.
 - Local dry-run mode.
 
@@ -166,7 +167,7 @@ Current implementation:
 
 - Added a Supabase-backed report query for current GMP snapshots and recent listing results.
 - Added overall direction-accuracy and mean percentage-error statistics.
-- Added HTML and plain-text email delivery through the Gmail API using a Google OAuth refresh token.
+- Added a dashboard-style HTML email with KPI cards, IPO and listing tables, an inline PNG snapshot, a live-dashboard link, and a plain-text fallback. Gmail rendering still needs validation.
 - Added `python -m scripts.send_daily_report`; it prints a dry run by default and sends only with `--send`.
 - Maintains recipient addresses in `config/report_recipients.txt`, one address per line; delivery sends separate messages to protect recipient privacy.
 - Added tests for report data, MIME content, Gmail API delivery, and the no-send dry-run default.
@@ -174,10 +175,11 @@ Current implementation:
 
 Completion gate:
 
-- Dry-run report is readable without sending email.
+- Dry-run output is readable without sending email.
+- A test email renders the dashboard layout and opens the live Streamlit dashboard.
 - Credentials are read only from environment variables or GitHub Secrets.
 
-### Phase 7: GitHub Actions Automation - In progress
+### Phase 7: GitHub Actions Automation - Validation queued
 
 Deliverables:
 
@@ -235,7 +237,7 @@ SUPABASE_KEY = "..."
 
 Apply `supabase/migrations/005_dashboard_read_policies.sql` after migrations 001-004. It grants the unauthenticated `anon` role read-only access to the four dashboard tables. This makes dashboard data publicly readable, so the Streamlit app must use the publishable/anon key, never a Supabase secret/service-role key.
 
-The dashboard remains read-only until the cloud pipeline and reconciliation are stable.
+The dashboard remains read-only. The email contains a point-in-time visual summary and links to the interactive dashboard.
 
 ## Secrets
 

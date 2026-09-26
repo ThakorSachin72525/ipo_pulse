@@ -1,4 +1,4 @@
-"""Print or email the latest IPO Pulse report."""
+"""Print or email a snapshot of the IPO Pulse dashboard."""
 
 from __future__ import annotations
 
@@ -8,7 +8,11 @@ from pathlib import Path
 from app.config import Settings
 from app.repositories.supabase_repository import SupabaseRepository
 from app.services.email_service import load_recipients, send_report
-from app.services.report_service import build_daily_report
+from app.services.report_service import (
+    build_daily_report,
+    build_dashboard_email_html,
+    build_dashboard_snapshot_png,
+)
 
 
 def main() -> int:
@@ -16,7 +20,7 @@ def main() -> int:
     parser.add_argument(
         "--send",
         action="store_true",
-        help="send the report through the Gmail API; without this flag the report is printed only",
+        help="send the dashboard email through the Gmail API; without this flag print its text fallback",
     )
     args = parser.parse_args()
 
@@ -24,6 +28,8 @@ def main() -> int:
     repository = SupabaseRepository.from_settings(settings)
     current_ipos, recent_results = repository.get_daily_report_data()
     report = build_daily_report(current_ipos, recent_results)
+    html_report = build_dashboard_email_html(current_ipos, recent_results)
+    snapshot_png = build_dashboard_snapshot_png(current_ipos, recent_results)
 
     if not args.send:
         print(report)
@@ -53,8 +59,10 @@ def main() -> int:
             client_secret=settings.google_oauth_client_secret,
             refresh_token=settings.google_oauth_refresh_token,
             recipient=recipient,
+            html_report=html_report,
+            snapshot_png=snapshot_png,
         )
-    print(f"Daily report sent to {len(recipients)} recipient(s)")
+    print(f"Dashboard email sent to {len(recipients)} recipient(s)")
     return 0
 
 
