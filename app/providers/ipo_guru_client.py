@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import re
+import time
 from collections.abc import Mapping
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from typing import Any
 
 import requests
@@ -109,11 +112,26 @@ class IPOGuruClient:
         """Return the documented Basic-plan IPO detail endpoint payload."""
         if not slug:
             raise ValueError("IPO slug is required")
-        response = requests.get(
-            f"{self._base_url}/ipos/{slug}",
-            headers={"X-API-KEY": self._api_key},
-            timeout=self._timeout,
-        )
+        for attempt in range(4):
+            response = requests.get(
+                f"{self._base_url}/ipos/{slug}",
+                headers={"X-API-KEY": self._api_key},
+                timeout=self._timeout,
+            )
+            if response.status_code != 429 or attempt == 3:
+                break
+            retry_after = response.headers.get("Retry-After")
+            try:
+                delay = float(retry_after)
+            except (TypeError, ValueError):
+                try:
+                    retry_at = parsedate_to_datetime(retry_after)
+                    if retry_at.tzinfo is None:
+                        retry_at = retry_at.replace(tzinfo=timezone.utc)
+                    delay = max(0.0, (retry_at - datetime.now(timezone.utc)).total_seconds())
+                except (TypeError, ValueError, OverflowError):
+                    delay = float(2**attempt)
+            time.sleep(max(0.0, delay))
         if not response.ok:
             raise IPOGuruAPIError(
                 f"IPO Guru detail request failed with HTTP {response.status_code}"

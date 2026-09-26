@@ -42,6 +42,8 @@ def test_client_fetches_documented_ipo_detail_endpoint(monkeypatch):
 
     class Response:
         ok = True
+        status_code = 200
+        headers = {}
 
         def json(self):
             return payload
@@ -57,6 +59,39 @@ def test_client_fetches_documented_ipo_detail_endpoint(monkeypatch):
     assert result == payload
     assert requested[0][0] == "https://www.ipoguru.in/api/v2/ipos/example-ipo"
     assert requested[0][1] == {"X-API-KEY": "test-key"}
+
+
+def test_client_retries_detail_request_after_retry_after(monkeypatch):
+    requests_seen = []
+    delays = []
+
+    class Response:
+        def __init__(self, status_code, payload, headers=None):
+            self.status_code = status_code
+            self.ok = status_code < 400
+            self._payload = payload
+            self.headers = headers or {}
+
+        def json(self):
+            return self._payload
+
+    responses = [
+        Response(429, {"message": "rate limited"}, {"Retry-After": "3"}),
+        Response(200, {"data": {"name": "Example IPO"}}),
+    ]
+
+    def fake_get(*_args, **_kwargs):
+        requests_seen.append(True)
+        return responses.pop(0)
+
+    monkeypatch.setattr("app.providers.ipo_guru_client.requests.get", fake_get)
+    monkeypatch.setattr("app.providers.ipo_guru_client.time.sleep", delays.append)
+
+    payload = IPOGuruClient("test-key").fetch_ipo_detail("example-ipo")
+
+    assert payload == {"data": {"name": "Example IPO"}}
+    assert len(requests_seen) == 2
+    assert delays == [3.0]
 
 
 def test_normalize_ipo_detail_extracts_documented_actual_listing_price():
