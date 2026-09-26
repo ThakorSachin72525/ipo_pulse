@@ -46,6 +46,33 @@ def normalize_gmp_record(record: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def normalize_ipo_detail(payload: Any) -> dict[str, Any]:
+    """Normalize the Basic-plan IPO detail response used for listing reconciliation."""
+    if not isinstance(payload, Mapping):
+        raise IPOGuruAPIError("IPO Guru returned an unexpected IPO detail format")
+    record = payload.get("data", payload)
+    if not isinstance(record, Mapping):
+        raise IPOGuruAPIError("IPO Guru returned an unexpected IPO detail format")
+
+    listing = record.get("listing")
+    listing = listing if isinstance(listing, Mapping) else {}
+    listing_price = record.get("actual_listing_price")
+    if listing_price is None:
+        listing_price = record.get("listing_price")
+    if listing_price is None:
+        listing_price = listing.get("actual_listing_price", listing.get("listing_price"))
+
+    return {
+        "name": record.get("name"),
+        "slug": record.get("slug"),
+        "issue_price": parse_number(record.get("issue_price")),
+        "lot_size": record.get("lot_size"),
+        "listing_date": record.get("listing_date", listing.get("listing_date")),
+        "actual_listing_price": parse_number(listing_price),
+        "status": record.get("status"),
+    }
+
+
 class IPOGuruClient:
     """Fetch IPO and GMP data from IPO Guru."""
 
@@ -77,3 +104,21 @@ class IPOGuruClient:
             return response.json()
         except ValueError as error:
             raise IPOGuruAPIError("IPO Guru returned invalid JSON") from error
+
+    def fetch_ipo_detail(self, slug: str) -> Any:
+        """Return the documented Basic-plan IPO detail endpoint payload."""
+        if not slug:
+            raise ValueError("IPO slug is required")
+        response = requests.get(
+            f"{self._base_url}/ipos/{slug}",
+            headers={"X-API-KEY": self._api_key},
+            timeout=self._timeout,
+        )
+        if not response.ok:
+            raise IPOGuruAPIError(
+                f"IPO Guru detail request failed with HTTP {response.status_code}"
+            )
+        try:
+            return response.json()
+        except ValueError as error:
+            raise IPOGuruAPIError("IPO Guru returned invalid IPO detail JSON") from error

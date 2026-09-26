@@ -25,6 +25,34 @@ def test_gmp_history_is_append_only_and_timestamp_unique():
     assert "observed_date" not in schema
 
 
+def test_prediction_schema_links_a_prediction_to_its_gmp_snapshot():
+    schema = (Path("supabase/migrations/002_prediction_schema.sql")).read_text()
+
+    assert "create table if not exists public.ipo_predictions" in schema
+    assert "gmp_history_id uuid not null references public.ipo_gmp_history(gmp_history_id) on delete cascade" in schema
+    assert "expected_listing_price numeric(12, 2)" in schema
+    assert "unique (ipo_id, gmp_history_id, source)" in schema
+    assert "idx_ipo_predictions_ipo_created" in schema
+
+
+def test_listing_result_schema_tracks_accuracy_metrics_for_each_prediction():
+    schema = (Path("supabase/migrations/003_listing_results_schema.sql")).read_text()
+
+    assert "create table if not exists public.ipo_listing_results" in schema
+    assert "prediction_id uuid not null references public.ipo_predictions(prediction_id) on delete cascade" in schema
+    assert "actual_listing_price numeric(12, 2)" in schema
+    assert "prediction_error numeric(12, 2)" in schema
+    assert "direction_accuracy boolean not null" in schema
+    assert "unique (ipo_id, prediction_id)" in schema
+
+
+def test_listing_reconciliation_migration_adds_provider_slug():
+    schema = (Path("supabase/migrations/004_ipo_guru_slug.sql")).read_text()
+
+    assert "add column if not exists ipo_slug text" in schema
+    assert "idx_ipos_source_slug" in schema
+
+
 def test_schema_keeps_rls_enabled_without_public_policies():
     schema = SCHEMA_PATH.read_text()
 

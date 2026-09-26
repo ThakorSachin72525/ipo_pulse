@@ -83,17 +83,23 @@ class ListingResult:
     predicted_listing_price: float
     actual_gain_percent: float
     prediction_error: float
-    percentage_error: float
+    percentage_error: Optional[float]
     direction_accuracy: bool
 
     @classmethod
     def from_prediction(cls, ipo: IPO, prediction: PredictionRecord) -> "ListingResult":
         if ipo.actual_listing_price is None:
             raise ValueError("actual_listing_price is required to evaluate a prediction")
+        if ipo.issue_price <= 0:
+            raise ValueError("issue_price must be positive to evaluate a prediction")
 
         actual_gain_percent = ((ipo.actual_listing_price - ipo.issue_price) / ipo.issue_price) * 100
         prediction_error = ipo.actual_listing_price - prediction.expected_listing_price
-        percentage_error = (abs(prediction_error) / prediction.expected_listing_price) * 100
+        percentage_error = (
+            (abs(prediction_error) / abs(prediction.expected_listing_price)) * 100
+            if prediction.expected_listing_price
+            else None
+        )
         direction_accuracy = (actual_gain_percent >= 0) == (prediction.expected_listing_price >= ipo.issue_price)
 
         return cls(

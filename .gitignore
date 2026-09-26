@@ -217,6 +217,7 @@ tempCodeRunnerFile.py
 *.ppt
 *.pptx
 *.txt
+!config/report_recipients.txt
 *.log
 *.bak
 *.tmp
