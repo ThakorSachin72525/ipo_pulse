@@ -25,7 +25,7 @@ The system will:
 - Record the GMP-based prediction used for an IPO.
 - Store actual listing prices after an IPO lists.
 - Calculate prediction error and direction accuracy.
-- Send a daily email report through Gmail SMTP.
+- Send a daily email report through the Gmail API.
 - Run automatically through GitHub Actions.
 
 GMP is treated as a prediction input, not as a guaranteed listing price.
@@ -159,17 +159,17 @@ Deliverables:
 - Recently listed IPO report section.
 - Overall accuracy statistics.
 - HTML/text email rendering.
-- Gmail SMTP delivery.
+- Gmail API delivery.
 - Local dry-run mode.
 
 Current implementation:
 
 - Added a Supabase-backed report query for current GMP snapshots and recent listing results.
 - Added overall direction-accuracy and mean percentage-error statistics.
-- Added HTML and plain-text email composition with Gmail SMTP XOAUTH2 using a Google OAuth refresh token.
+- Added HTML and plain-text email delivery through the Gmail API using a Google OAuth refresh token.
 - Added `python -m scripts.send_daily_report`; it prints a dry run by default and sends only with `--send`.
 - Maintains recipient addresses in `config/report_recipients.txt`, one address per line; delivery sends separate messages to protect recipient privacy.
-- Added tests for report data, MIME content, SMTP delivery, and the no-send dry-run default.
+- Added tests for report data, MIME content, Gmail API delivery, and the no-send dry-run default.
 - Live database and Gmail delivery validation is pending configured secrets.
 
 Completion gate:
@@ -221,7 +221,7 @@ Later secrets:
 
 Secrets belong in GitHub repository settings under **Settings → Secrets and variables → Actions**. They must not be committed to the repository.
 Recipient addresses are maintained in the tracked file `config/report_recipients.txt`, one per line. Edit and commit that file when the list changes; it is not an Actions secret.
-The sender address identifies the Gmail mailbox; SMTP authentication uses the OAuth refresh token, not the mailbox password. Google can revoke refresh tokens, so reauthorization may occasionally be needed.
+The sender address identifies the Gmail mailbox; the Gmail API uses the OAuth refresh token, not the mailbox password. Google can revoke refresh tokens, so reauthorization may occasionally be needed.
 
 ## Google OAuth Setup
 

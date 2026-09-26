@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import html
-import smtplib
-import ssl
+import base64
 from email.utils import parseaddr
 from email.message import EmailMessage
 from pathlib import Path
@@ -82,7 +81,11 @@ def send_report(
 
     access_token = fetch_google_access_token(client_id, client_secret, refresh_token)
     message = build_report_message(sender, recipient, report)
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=ssl.create_default_context()) as smtp:
-        auth_string = f"user={sender}\x01auth=Bearer {access_token}\x01\x01"
-        smtp.auth("XOAUTH2", lambda _challenge=None: auth_string, initial_response_ok=True)
-        smtp.send_message(message)
+    raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode("ascii")
+    response = requests.post(
+        "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={"raw": raw_message},
+        timeout=30,
+    )
+    response.raise_for_status()

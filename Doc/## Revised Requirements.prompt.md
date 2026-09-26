@@ -10,7 +10,7 @@ Build an automation-first IPO tracking system:
 - Record GMP-based predictions before listing.
 - Store actual listing prices after listing.
 - Calculate prediction errors and direction accuracy.
-- Generate and email daily reports through Gmail SMTP.
+- Generate and email daily reports through the Gmail API.
 - Run automatically through GitHub Actions.
 - Keep all credentials in GitHub Actions Secrets.
 - Maintain report recipient addresses in the tracked file `config/report_recipients.txt`; store Google OAuth client credentials and refresh token in GitHub Actions Secrets, never the mailbox password.
@@ -64,11 +64,11 @@ The existing PySide6 app remains operational but is not expanded during the init
    - Handle missing GMP or missing listing data safely.
 
 6. **Daily Email Report**
-   - Current status: Next. Supabase-backed report data, overall accuracy summary, HTML/text email composition, Gmail SMTP XOAUTH2 sender using Google OAuth refresh tokens, and dry-run CLI are implemented and tested locally; live credential-backed delivery validation remains.
+   - Current status: Next. Supabase-backed report data, overall accuracy summary, HTML/text email composition, Gmail API sender using Google OAuth refresh tokens, and dry-run CLI are implemented and tested locally; live credential-backed delivery validation remains.
    - Maintain recipient addresses in `config/report_recipients.txt`, one per line, and send separate messages per recipient.
    - Generate a Gmail-scoped refresh token with offline access; do not store the mailbox password.
    - Generate current IPO, historical result, and overall statistics sections.
-   - Add Gmail SMTP delivery.
+   - Add Gmail API delivery.
    - Include a local dry-run mode.
 
 7. **GitHub Actions**

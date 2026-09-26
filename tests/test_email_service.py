@@ -1,3 +1,4 @@
+import base64
 from email.message import EmailMessage
 
 import pytest
@@ -74,36 +75,22 @@ def test_fetch_google_access_token_uses_refresh_token(monkeypatch):
     }
 
 
-def test_send_report_uses_gmail_oauth_and_fails_without_credentials(monkeypatch):
-    sent_messages = []
+def test_send_report_uses_gmail_api_and_fails_without_credentials(monkeypatch):
+    requests_seen = []
 
-    class FakeSMTP:
-        def __init__(self, host, port, context):
-            assert host == "smtp.gmail.com"
-            assert port == 465
+    class Response:
+        def raise_for_status(self):
+            pass
 
-        def __enter__(self):
-            return self
+    def fake_post(url, headers, json, timeout):
+        requests_seen.append((url, headers, json, timeout))
+        return Response()
 
-        def __exit__(self, *_args):
-            return False
-
-        def auth(self, mechanism, authobject, initial_response_ok=True):
-            assert mechanism == "XOAUTH2"
-            assert initial_response_ok is True
-            assert authobject() == (
-                "user=reports@example.com\x01auth=Bearer short-lived-access-token\x01\x01"
-            )
-
-        def send_message(self, message):
-            sent_messages.append(message)
-
-    monkeypatch.setattr("app.services.email_service.smtplib.SMTP_SSL", FakeSMTP)
+    monkeypatch.setattr("app.services.email_service.requests.post", fake_post)
     monkeypatch.setattr(
         "app.services.email_service.fetch_google_access_token",
         lambda *_args: "short-lived-access-token",
     )
-
     send_report(
         report="IPO Pulse Daily Report",
         sender="reports@example.com",
@@ -113,8 +100,15 @@ def test_send_report_uses_gmail_oauth_and_fails_without_credentials(monkeypatch)
         recipient="owner@example.com",
     )
 
-    assert len(sent_messages) == 1
-    assert sent_messages[0]["To"] == "owner@example.com"
+    assert len(requests_seen) == 1
+    url, headers, payload, timeout = requests_seen[0]
+    assert url == "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
+    assert headers["Authorization"] == "Bearer short-lived-access-token"
+    assert timeout == 30
+    message = base64.urlsafe_b64decode(payload["raw"])
+    assert b"To: owner@example.com" in message
+    assert b"Subject: IPO Pulse Daily Report" in message
+    assert b"IPO Pulse Daily Report" in message
 
     with pytest.raises(ValueError, match="email credentials and recipient"):
         send_report(
