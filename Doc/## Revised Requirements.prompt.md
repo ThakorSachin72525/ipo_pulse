@@ -73,8 +73,8 @@ The existing PySide6 app remains operational but is not expanded during the init
    - Include a local dry-run mode.
 
 7. **GitHub Actions**
-   - Current status: Complete. Full manual send and dry-run pipeline runs succeeded on `main` (runs `36271478502` and `36271608004`); repeated ingestion returned the same 14 IPOs, GMP observations, and predictions. Daily schedule is configured for 11:32 AM IST (`06:02 UTC`).
-   - Schedule the pipeline daily at 11:32 AM IST (`06:02 UTC`).
+   - Current status: Complete. Full manual send and dry-run pipeline runs succeeded on `main` (runs `36271478502` and `36271608004`); repeated ingestion returned the same 14 IPOs, GMP observations, and predictions. Daily schedule is configured for 11:50 AM IST (`06:20 UTC`).
+   - Schedule the pipeline daily at 11:50 AM IST (`06:20 UTC`).
    - Add manual dispatch.
    - Wire secrets securely.
    - Add logging and failure reporting.
