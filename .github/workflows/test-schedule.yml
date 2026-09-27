@@ -1,0 +1,19 @@
+name: Schedule Trigger Test
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/5 * * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  report-trigger-time:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log schedule trigger time
+        env:
+          EXPECTED_CRON: "*/5 * * * *"
+        run: python schedule.py
