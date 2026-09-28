@@ -73,7 +73,7 @@ The existing PySide6 app remains operational but is not expanded during the init
    - Include a local dry-run mode.
 
 7. **GitHub Actions**
-   - Current status: Validation queued. Full manual send and dry-run pipeline runs succeeded on `main` (runs `36271478502` and `36271608004`); repeated ingestion returned the same 14 IPOs, GMP observations, and predictions. The daily schedule is configured for 11:50 AM IST (`06:20 UTC`), but GitHub created no schedule events in three consecutive five-minute diagnostic ticks. The diagnostic script passed on manual dispatch; its frequent schedule is disabled pending further investigation.
+   - Current status: Validation queued. Full manual send and dry-run pipeline runs succeeded on `main` (runs `36271478502` and `36271608004`); repeated ingestion returned the same 14 IPOs, GMP observations, and predictions. The daily schedule is configured for 11:50 AM IST (`06:20 UTC`), but production `schedule` runs were created on Sep 27 at 5:39 PM IST (run `36318032760`) and Sep 28 at 7:34 PM IST (run `36433230260`). The diagnostic script passed on manual dispatch but saw no event across three five-minute cron ticks; its frequent schedule is disabled. Investigate the multi-hour schedule delay.
    - Schedule the pipeline daily at 11:50 AM IST (`06:20 UTC`).
    - Add manual dispatch.
    - Wire secrets securely.

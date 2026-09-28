@@ -12,7 +12,7 @@ Cloud-based IPO tracking and GMP prediction pipeline for Indian IPOs.
 | 4. Prediction pipeline | Complete | Latest pre-listing GMP selection, prediction payload logic, and live persistence are implemented and validated |
 | 5. Listing accuracy | Validation queued | Reconciliation completed without throttling; no listed IPOs were eligible for real outcomes yet |
 | 6. Daily email dashboard | In progress | Dashboard HTML and inline snapshot sent successfully; visual rendering in Gmail still needs confirmation |
-| 7. GitHub Actions automation | Validation queued | Manual pipelines pass, but GitHub created no scheduled events in repeated trigger diagnostics |
+| 7. GitHub Actions automation | Validation queued | Schedule runs appeared on Sep 27 at 5:39 PM IST and Sep 28 at 7:34 PM IST, hours after the configured 11:50 AM trigger |
 | 8. Dashboard | Complete | Deployed dashboard reads IPO Guru data through the versioned read-only Supabase policies |
 
 ## Goal
@@ -194,14 +194,14 @@ Current implementation:
 - Added `.github/workflows/daily-pipeline.yml` with schema verification, IPO Guru ingestion, listing reconciliation, and report generation.
 - Added manual dispatch with `send_report` defaulting to false, so manual validation prints a dry run without sending email.
 - Added a daily `06:20 UTC` schedule (11:50 AM IST) that sends the report through Gmail API OAuth credentials. Full manual send and dry-run pipeline runs succeeded on `main` (runs `36271478502` and `36271608004`). The repeat ingestion returned the same 14 IPOs, 14 GMP observations, and 14 predictions without error.
-- Added concurrency protection and a GitHub Actions job summary. Added `.github/workflows/test-schedule.yml` and `schedule.py` as an isolated schedule diagnostic. Its manual run succeeded, but GitHub created no schedule run across three expected five-minute ticks; the diagnostic workflow is disabled to avoid unnecessary Actions usage.
+- Added concurrency protection and a GitHub Actions job summary. Added `.github/workflows/test-schedule.yml` and `schedule.py` as an isolated schedule diagnostic. Its manual run succeeded, but GitHub created no schedule run across three expected five-minute ticks; the diagnostic workflow is disabled to avoid unnecessary Actions usage. The production workflow later ran with event `schedule` on Sep 27 at 5:39 PM IST (run `36318032760`) and Sep 28 at 7:34 PM IST (run `36433230260`), far after its configured 11:50 AM IST time.
 - IPO Guru detail requests now use bounded `Retry-After` backoff when the provider returns HTTP 429.
 
 Completion gate:
 
 - Full manual send pipeline succeeds on the default branch.
 - Repeated ingestion succeeds with the same source rows.
-- Daily schedule is configured for 11:50 AM IST (`06:20 UTC`), but a scheduled event has not been observed.
+- Daily schedule is configured for 11:50 AM IST (`06:20 UTC`), but observed scheduled events ran hours late; punctual schedule validation remains open.
 - Manual dry-run pipeline succeeds on the default branch.
 - GitHub creates scheduled runs for the diagnostic workflow when enabled.
 
