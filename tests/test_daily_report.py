@@ -51,7 +51,7 @@ def test_repository_builds_report_rows_from_latest_gmp_and_saved_results():
             if self.table_name == "ipos":
                 return Response([
                     {"ipo_id": "ipo-a", "ipo_name": "Alpha IPO", "status": "open", "source": "ipo_guru"},
-                    {"ipo_id": "sample-a", "ipo_name": "IPO Pulse Phase 5 Sample", "status": "sample", "source": "ipo_pulse_phase5_sample"},
+                    {"ipo_id": "sample-a", "ipo_name": "Untracked Example IPO", "status": "test", "source": "manual_test"},
                 ])
             if self.table_name == "ipo_gmp_history":
                 return Response([

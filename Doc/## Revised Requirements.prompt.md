@@ -55,7 +55,7 @@ The existing PySide6 app remains operational but is not expanded during the init
 
 5. **Listing Accuracy**
    - Current status: Live result validation is pending. Listing detail fetching, persisted slug lookup, and per-prediction outcome reconciliation are implemented; reconciliation skips IPOs not yet listed and avoids detail requests when the stored listing price is available.
-   - Add a manually dispatched, repeatable synthetic database sample tagged `ipo_pulse_phase5_sample` to validate the IPO/GMP/prediction/result relationship.
+   - Keep synthetic Phase 5 rows out of the production database and dashboard. The temporary tagged validation record has been removed; wait for real IPO listings to validate live outcome accuracy.
    - Fetch actual listing price from the IPO Guru Basic-plan detail endpoint using each saved IPO slug.
    - Store a result for every saved prediction dated before listing without rewriting prediction records.
    - Add migrations for prediction rows, listing outcomes, and the IPO Guru slug; apply them in order before reconciliation.
@@ -64,7 +64,7 @@ The existing PySide6 app remains operational but is not expanded during the init
    - Handle missing GMP or missing listing data safely.
 
 6. **Daily Email Dashboard**
-   - Current status: In progress. Gmail accepted the dashboard email and inline PNG for both configured recipients. Confirm visual rendering in the mailbox.
+   - Current status: Complete. Gmail accepted the dashboard email and inline PNG for both configured recipients; the user confirmed the visual rendering is correct.
    - Maintain recipient addresses in `config/report_recipients.txt`, one per line, and send separate messages per recipient.
    - Generate a Gmail-scoped refresh token with offline access; do not store the mailbox password.
    - Show current IPOs, recent listing outcomes, and overall statistics in the email dashboard.

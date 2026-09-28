@@ -7,7 +7,6 @@ from app.models.ipo_model import GMPObservation, IPO, PredictionRecord
 from app.repositories.supabase_repository import SupabaseRepository, build_listing_result_payload
 from app.services.ipo_service import IPOService
 from scripts import reconcile_listings
-from scripts import seed_listing_accuracy_sample
 
 
 def test_repository_reconciles_a_listed_ipo_to_its_latest_prediction():
@@ -381,46 +380,3 @@ def test_reconciliation_skips_unlisted_ipo_without_detail_request():
             pytest.fail("future IPO must not create an outcome")
 
     assert reconcile_listings.reconcile_listings(Client(), Repository()) == (0, 0)
-
-
-def test_sample_seed_builds_a_repeatable_linked_prediction_and_result(monkeypatch, capsys):
-    calls = []
-
-    class Repository:
-        def upsert_ipo(self, record):
-            calls.append(("ipo", record))
-            return "sample-ipo-id"
-
-        def upsert_gmp_observation(self, ipo_id, observation_at, record):
-            calls.append(("gmp", ipo_id, observation_at, record))
-            return "sample-gmp-id"
-
-        def upsert_prediction(self, ipo_id, gmp_history_id, ipo, gmp):
-            calls.append(("prediction", ipo_id, gmp_history_id, ipo, gmp))
-            return "sample-prediction-id"
-
-        def upsert_listing_result(self, ipo_id, prediction_id, ipo, prediction):
-            calls.append(("result", ipo_id, prediction_id, ipo, prediction))
-            return "sample-result-id"
-
-    class Settings:
-        pass
-
-    monkeypatch.setattr(seed_listing_accuracy_sample.Settings, "from_env", lambda: Settings())
-    monkeypatch.setattr(
-        seed_listing_accuracy_sample.SupabaseRepository,
-        "from_settings",
-        lambda _settings: Repository(),
-    )
-
-    assert seed_listing_accuracy_sample.main() == 0
-
-    assert calls[0][1]["source"] == "ipo_pulse_phase5_sample"
-    assert calls[1][1] == "sample-ipo-id"
-    assert calls[1][3]["source"] == "ipo_pulse_phase5_sample"
-    assert calls[2][2] == "sample-gmp-id"
-    assert calls[2][4].gmp == 15.0
-    assert calls[3][2] == "sample-prediction-id"
-    assert calls[3][3].actual_listing_price == 112.0
-    assert calls[3][4].expected_listing_price == 115.0
-    assert "sample-result-id" in capsys.readouterr().out

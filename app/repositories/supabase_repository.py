@@ -288,14 +288,14 @@ class SupabaseRepository:
         ]
         return current_ipos, recent_results
 
-    def get_dashboard_data(self, include_samples: bool = False) -> dict[str, list[dict[str, Any]]]:
+    def get_dashboard_data(self) -> dict[str, list[dict[str, Any]]]:
         """Return read-only joined data for the dashboard."""
         ipo_response = self._client.table("ipos").select(
             "ipo_id,ipo_name,issue_price,lot_size,status,listing_date,listing_price,source"
         ).execute()
         ipos = [
             row for row in ipo_response.data
-            if include_samples or row.get("source") == "ipo_guru"
+            if row.get("source") == "ipo_guru"
         ]
         ipo_ids = {row["ipo_id"] for row in ipos}
         names = {row["ipo_id"]: row["ipo_name"] for row in ipos}

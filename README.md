@@ -11,7 +11,7 @@ Cloud-based IPO tracking and GMP prediction pipeline for Indian IPOs.
 | 3. Supabase persistence | Complete | Schema migration verified and live GitHub Actions ingestion wrote 14 IPO rows and 14 GMP observations |
 | 4. Prediction pipeline | Complete | Latest pre-listing GMP selection, prediction payload logic, and live persistence are implemented and validated |
 | 5. Listing accuracy | Validation queued | Reconciliation completed without throttling; no listed IPOs were eligible for real outcomes yet |
-| 6. Daily email dashboard | In progress | Dashboard HTML and inline snapshot sent successfully; visual rendering in Gmail still needs confirmation |
+| 6. Daily email dashboard | Complete | User confirmed the HTML dashboard and inline snapshot render correctly in Gmail |
 | 7. GitHub Actions automation | Validation queued | Schedule runs appeared on Sep 27 at 5:39 PM IST and Sep 28 at 7:34 PM IST, hours after the configured 11:50 AM trigger |
 | 8. Dashboard | Complete | Deployed dashboard reads IPO Guru data through the versioned read-only Supabase policies |
 
@@ -136,8 +136,7 @@ Current implementation:
 - Added regression tests covering the positive and negative direction cases and the expected accuracy math.
 - The reconciliation implementation is complete locally; live Supabase validation remains pending. It skips IPOs whose listing date is unknown or in the future, uses stored listing prices when available, and requests detail only for listed IPOs that still need an actual price.
 - Added `supabase/migrations/003_listing_results_schema.sql` for prediction outcomes.
-- Added `scripts/seed_listing_accuracy_sample.py` and a manual workflow to insert one idempotent synthetic IPO, GMP observation, prediction, and listing result, all tagged with source `ipo_pulse_phase5_sample`.
-- Normal report queries exclude non-IPO-Guru sources so the synthetic row does not affect production report metrics.
+- Removed the temporary synthetic Phase 5 database record and its related rows after using it to validate the IPO/GMP/prediction/result relationship. The dashboard now reads only IPO Guru production rows.
 - Added migration `004_ipo_guru_slug.sql` so the Basic-plan detail endpoint can be queried for tracked IPOs.
 - Added `scripts/reconcile_listings.py` and `.github/workflows/reconcile-listings.yml` to fetch actual listing details and store a result for every saved prediction dated before listing.
 - Incomplete listing detail is skipped; saved prediction rows are not rewritten.
@@ -149,9 +148,9 @@ Completion gate:
 - Listing-result rows remain tied to their original prediction.
 - Migrations 002-004 are applied and the manual Supabase reconciliation workflow succeeds.
 
-Apply `supabase/migrations/002_prediction_schema.sql`, `003_listing_results_schema.sql`, and `004_ipo_guru_slug.sql` in order in the Supabase SQL Editor before running the prediction ingestion or Phase 5 workflows.
+Apply `supabase/migrations/002_prediction_schema.sql`, `003_listing_results_schema.sql`, and `004_ipo_guru_slug.sql` in order in the Supabase SQL Editor before running prediction ingestion or listing reconciliation.
 
-### Phase 6: Daily Email Dashboard - In progress
+### Phase 6: Daily Email Dashboard - Complete
 
 Deliverables:
 
@@ -167,16 +166,16 @@ Current implementation:
 
 - Added a Supabase-backed report query for current GMP snapshots and recent listing results.
 - Added overall direction-accuracy and mean percentage-error statistics.
-- Added a dashboard-style HTML email with KPI cards, IPO and listing tables, an inline PNG snapshot, a live-dashboard link, and a plain-text fallback. Gmail accepted delivery to both configured recipients; visual rendering still needs confirmation in the mailbox.
+- Added a dashboard-style HTML email with KPI cards, IPO and listing tables, an inline PNG snapshot, a live-dashboard link, and a plain-text fallback. Gmail accepted delivery to both configured recipients, and the user confirmed the visual rendering is correct.
 - Added `python -m scripts.send_daily_report`; it prints a dry run by default and sends only with `--send`.
 - Maintains recipient addresses in `config/report_recipients.txt`, one address per line; delivery sends separate messages to protect recipient privacy.
 - Added tests for report data, MIME content, Gmail API delivery, and the no-send dry-run default.
-- Live database and Gmail delivery validation is pending configured secrets.
+- Live database and Gmail delivery validation succeeded with configured secrets.
 
 Completion gate:
 
 - Dry-run output is readable without sending email.
-- A test email renders the dashboard layout and opens the live Streamlit dashboard.
+- The user confirmed that a delivered test email renders the dashboard layout correctly and opens the live Streamlit dashboard.
 - Credentials are read only from environment variables or GitHub Secrets.
 
 ### Phase 7: GitHub Actions Automation - Validation queued
@@ -212,7 +211,7 @@ Current implementation:
 - Added `dashboard.py` as a read-only Streamlit dashboard.
 - Added current IPO overview, GMP history chart, prediction history chart, and predicted-versus-actual listing results.
 - Added direction accuracy and mean percentage error metrics.
-- Real IPO Guru data is shown by default; Phase 5 sample data is opt-in from the sidebar.
+- Dashboard data is restricted to IPO Guru production rows.
 - The dashboard never writes to Supabase.
 - Live validation completed: Streamlit Community Cloud reads IPO records from Supabase using migration 005.
 

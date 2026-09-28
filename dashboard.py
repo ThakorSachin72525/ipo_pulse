@@ -13,9 +13,9 @@ st.set_page_config(page_title="IPO Pulse", page_icon="📈", layout="wide")
 
 
 @st.cache_data(ttl=300)
-def load_data(include_samples: bool) -> dict[str, list[dict[str, object]]]:
+def load_data() -> dict[str, list[dict[str, object]]]:
     repository = SupabaseRepository.from_settings(Settings.from_env())
-    return repository.get_dashboard_data(include_samples=include_samples)
+    return repository.get_dashboard_data()
 
 
 st.title("IPO Pulse")
@@ -23,13 +23,12 @@ st.caption("GMP snapshots, prediction history, and listing accuracy")
 
 with st.sidebar:
     st.header("Filters")
-    include_samples = st.checkbox("Include Phase 5 sample data", value=False)
     if st.button("Refresh data"):
         st.cache_data.clear()
         st.rerun()
 
 try:
-    data = load_data(include_samples)
+    data = load_data()
 except Exception as error:
     st.error(f"Unable to load Supabase data: {error}")
     st.stop()
