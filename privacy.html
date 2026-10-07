@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Privacy Policy for IPO Pulse, including how Gmail OAuth data is used for daily report delivery.">
+  <meta name="theme-color" content="#102a43">
+  <title>Privacy Policy | IPO Pulse</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="index.html" aria-label="IPO Pulse home"><span class="brand-mark" aria-hidden="true">IP</span><span>IPO Pulse</span></a>
+    <nav aria-label="Main navigation"><a href="index.html">Home</a><a href="privacy.html" aria-current="page">Privacy</a><a href="terms.html">Terms</a></nav>
+  </header>
+
+  <main class="legal-page">
+    <p class="eyebrow">IPO Pulse</p>
+    <h1>Privacy Policy</h1>
+    <p class="updated">Last updated: October 8, 2026</p>
+    <p>This policy explains how IPO Pulse handles information when you use the application and when you authorize its Gmail report-sending feature.</p>
+
+    <section class="legal-section">
+      <h2>What IPO Pulse is</h2>
+      <p>IPO Pulse is an Indian IPO tracking and analysis application. It stores IPO market information, GMP observations, estimates, and listing outcomes in its database to display dashboards and prepare daily reports.</p>
+    </section>
+
+    <section class="legal-section">
+      <h2>Google and Gmail information</h2>
+      <p>If the Gmail report feature is authorized, IPO Pulse uses Google OAuth credentials to obtain a temporary access token and send the daily IPO Pulse report through the Gmail API. The report is sent to the recipients configured by the project owner.</p>
+      <p>The current application code uses Gmail to send messages. It does not search, read, or analyze inbox messages, contacts, or attachments, and it does not retrieve Gmail profile information. The OAuth scope configured for this project is <code>https://mail.google.com/</code>, which is a broad Gmail permission. Google may therefore describe the authorization as allowing broad access to Gmail, even though the application's implemented use is the report-sending function.</p>
+    </section>
+
+    <section class="legal-section">
+      <h2>How Google user data is used</h2>
+      <p>Google authorization is used only to support the intended IPO Pulse daily email report functionality. The application uses the authorized Gmail account to deliver a report assembled from IPO Pulse market data to the configured recipient addresses.</p>
+    </section>
+
+    <section class="legal-section">
+      <h2>Storage and security</h2>
+      <p>OAuth client credentials and the refresh token are stored as confidential GitHub Actions secrets. A short-lived access token is used by the workflow to call Google and is not intentionally saved by IPO Pulse. The application does not store Gmail inbox content or attachments. Gmail may retain sent messages in the authorized account according to that account's normal settings.</p>
+      <p>IPO market data used by the dashboard and report is stored in Supabase. GitHub Actions runs the scheduled application and handles its configured secrets. No credentials should be placed in the public website or source code.</p>
+    </section>
+
+    <section class="legal-section">
+      <h2>Sharing</h2>
+      <p>IPO Pulse does not sell Google user data or use it for advertising. Information is shared only as needed to provide the requested functionality: Google processes the email for delivery, GitHub Actions runs the application, and Supabase stores IPO Pulse market data. IPO Pulse does not share Google user data with other third parties for their own purposes.</p>
+    </section>
+
+    <section class="legal-section">
+      <h2>Retention and deletion</h2>
+      <p>GitHub Actions secrets are retained until the project owner changes or deletes them. Temporary access tokens are used during a workflow run and are not intentionally retained by the application. Sent reports may remain in Gmail until deleted from that account. IPO Pulse market data remains in Supabase until the project owner removes it. The project does not maintain a separate archive of Gmail messages.</p>
+    </section>
+
+    <section class="legal-section">
+      <h2>Revoking Google access</h2>
+      <p>You can revoke the application's Google account access from your <a href="https://myaccount.google.com/permissions">Google Account third-party connections</a>. The project owner can also remove or replace the OAuth secrets in the repository's GitHub Actions settings. Revoking access prevents future report sends until authorization is restored.</p>
+    </section>
+
+    <section class="legal-section">
+      <h2>Contact</h2>
+      <p>For privacy questions or requests about information managed by IPO Pulse, contact the project owner at <strong>[Add project owner contact email]</strong>.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <a class="brand footer-brand" href="index.html"><span class="brand-mark" aria-hidden="true">IP</span><span>IPO Pulse</span></a>
+    <p>Last updated October 8, 2026.</p>
+    <nav aria-label="Footer navigation"><a href="privacy.html" aria-current="page">Privacy Policy</a><a href="terms.html">Terms of Service</a></nav>
+  </footer>
+</body>
+</html>
