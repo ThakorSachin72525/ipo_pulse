@@ -73,8 +73,8 @@ The existing PySide6 app remains operational but is not expanded during the init
    - Include a local dry-run mode.
 
 7. **GitHub Actions**
-   - Current status: Validation queued. Full manual send and dry-run pipeline runs succeeded on `main` (runs `36271478502` and `36271608004`); repeated ingestion returned the same 14 IPOs, GMP observations, and predictions. The daily schedule is configured for 11:50 AM IST (`06:20 UTC`), but production `schedule` runs were created on Sep 27 at 5:39 PM IST (run `36318032760`) and Sep 28 at 7:34 PM IST (run `36433230260`). The diagnostic script passed on manual dispatch but saw no event across three five-minute cron ticks; its frequent schedule is disabled. Investigate the multi-hour schedule delay.
-   - Schedule the pipeline daily at 11:50 AM IST (`06:20 UTC`).
+   - Current status: Validation queued. Full manual send and dry-run pipeline runs succeeded on `main` (runs `36271478502` and `36271608004`); repeated ingestion returned the same 14 IPOs, GMP observations, and predictions. The daily schedule is now configured for 7:00 AM IST (`01:30 UTC`). Production scheduled runs have arrived hours late. Oct 3–7 runs also failed while exchanging the Gmail OAuth refresh token (HTTP 400); schema verification, IPO Guru ingestion, and listing reconciliation succeeded. The diagnostic script passed on manual dispatch but saw no event across three five-minute cron ticks; its frequent schedule is disabled. Investigate schedule delays and reauthorize Gmail OAuth.
+   - Schedule the pipeline daily at 7:00 AM IST (`01:30 UTC`).
    - Add manual dispatch.
    - Wire secrets securely.
    - Add logging and failure reporting.
