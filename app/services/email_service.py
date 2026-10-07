@@ -1,42 +1,27 @@
-"""Email delivery for IPO Pulse reports."""
+"""Gmail SMTP delivery for IPO Pulse reports."""
 
 from __future__ import annotations
 
 import html
-import base64
-from email.utils import parseaddr
+import smtplib
+import ssl
 from email.message import EmailMessage
-from pathlib import Path
-
-import requests
 
 
-def load_recipients(path: Path) -> list[str]:
-    recipients = []
-    seen = set()
-    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
-        recipient = line.strip()
-        if not recipient or recipient.startswith("#"):
-            continue
-        _, parsed_address = parseaddr(recipient)
-        if (
-            parsed_address != recipient
-            or recipient.count("@") != 1
-            or any(character.isspace() for character in recipient)
-        ):
-            raise ValueError(f"Invalid recipient on line {line_number} in {path}")
-        normalized = recipient.casefold()
-        if normalized not in seen:
-            recipients.append(recipient)
-            seen.add(normalized)
-    return recipients
+SMTP_HOST = "smtp.gmail.com"
+SMTP_PORT = 465
+SMTP_TIMEOUT_SECONDS = 30
 
 
 def build_report_message(
-    sender: str, recipient: str, report: str, html_report: str | None = None, snapshot_png: bytes | None = None
+    sender: str,
+    recipient: str,
+    report: str,
+    html_report: str | None = None,
+    snapshot_png: bytes | None = None,
 ) -> EmailMessage:
     message = EmailMessage()
-    message["Subject"] = "IPO Pulse Daily Dashboard"
+    message["Subject"] = "IPO Pulse Daily Report"
     message["From"] = sender
     message["To"] = recipient
     message.set_content(report)
@@ -53,48 +38,36 @@ def build_report_message(
     return message
 
 
-def fetch_google_access_token(
-    client_id: str,
-    client_secret: str,
-    refresh_token: str,
-) -> str:
-    response = requests.post(
-        "https://oauth2.googleapis.com/token",
-        data={
-            "client_id": client_id,
-            "client_secret": client_secret,
-            "refresh_token": refresh_token,
-            "grant_type": "refresh_token",
-        },
-        timeout=30,
-    )
-    response.raise_for_status()
-    access_token = response.json().get("access_token")
-    if not isinstance(access_token, str) or not access_token:
-        raise RuntimeError("Google OAuth response did not contain an access token")
-    return access_token
-
-
 def send_report(
     report: str,
     sender: str,
-    client_id: str,
-    client_secret: str,
-    refresh_token: str,
+    app_password: str,
     recipient: str,
     html_report: str | None = None,
     snapshot_png: bytes | None = None,
 ) -> None:
-    if not all((sender, client_id, client_secret, refresh_token, recipient)):
-        raise ValueError("email credentials and recipient are required")
+    required = {
+        "GMAIL_SENDER": sender,
+        "GMAIL_APP_PASSWORD": app_password,
+        "GMAIL_RECIPIENT": recipient,
+    }
+    missing = [name for name, value in required.items() if not value or not value.strip()]
+    if missing:
+        raise ValueError(f"Missing required email environment variable(s): {', '.join(missing)}")
 
-    access_token = fetch_google_access_token(client_id, client_secret, refresh_token)
     message = build_report_message(sender, recipient, report, html_report, snapshot_png)
-    raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode("ascii")
-    response = requests.post(
-        "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
-        headers={"Authorization": f"Bearer {access_token}"},
-        json={"raw": raw_message},
-        timeout=30,
-    )
-    response.raise_for_status()
+    normalized_app_password = "".join(app_password.split())
+    try:
+        with smtplib.SMTP_SSL(
+            SMTP_HOST,
+            SMTP_PORT,
+            context=ssl.create_default_context(),
+            timeout=SMTP_TIMEOUT_SECONDS,
+        ) as smtp:
+            smtp.login(sender, normalized_app_password)
+            smtp.send_message(message)
+    except (OSError, smtplib.SMTPException) as error:
+        raise RuntimeError(
+            "Gmail SMTP could not send the IPO Pulse report. Check the Gmail sender, "
+            "App Password, and SMTP access."
+        ) from error

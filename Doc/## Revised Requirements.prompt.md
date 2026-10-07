@@ -10,10 +10,10 @@ Build an automation-first IPO tracking system:
 - Record GMP-based predictions before listing.
 - Store actual listing prices after listing.
 - Calculate prediction errors and direction accuracy.
-- Generate and email a dashboard-style HTML email with an inline PNG snapshot and link to the live Streamlit dashboard; retain a plain-text fallback.
+- Generate and email a dashboard-style HTML email with an inline PNG snapshot and link to the live Streamlit dashboard; retain a plain-text fallback. Send through Gmail SMTP using an App Password stored in GitHub Actions Secrets.
 - Run automatically through GitHub Actions.
 - Keep all credentials in GitHub Actions Secrets.
-- Maintain report recipient addresses in the tracked file `config/report_recipients.txt`; store Google OAuth client credentials and refresh token in GitHub Actions Secrets, never the mailbox password.
+- Store `GMAIL_SENDER`, `GMAIL_APP_PASSWORD`, and `GMAIL_RECIPIENT` in GitHub Actions Secrets; never commit or log the App Password.
 - Defer the existing PySide6 interface until the cloud pipeline is stable.
 
 The existing PySide6 app remains operational but is not expanded during the initial pipeline phases.
@@ -64,12 +64,12 @@ The existing PySide6 app remains operational but is not expanded during the init
    - Handle missing GMP or missing listing data safely.
 
 6. **Daily Email Dashboard**
-   - Current status: Complete. Gmail accepted the dashboard email and inline PNG for both configured recipients; the user confirmed the visual rendering is correct.
-   - Maintain recipient addresses in `config/report_recipients.txt`, one per line, and send separate messages per recipient.
-   - Generate a Gmail-scoped refresh token with offline access; do not store the mailbox password.
+   - Current status: In progress. The dashboard-style HTML email, inline PNG snapshot, live Streamlit link, and plain-text fallback are implemented. Gmail SMTP with an App Password replaces Gmail API OAuth; validate a live test delivery.
+   - Read `GMAIL_SENDER`, `GMAIL_APP_PASSWORD`, and `GMAIL_RECIPIENT` from environment variables or GitHub Actions Secrets. The sender must be the Gmail account that generated the App Password.
+   - Use SMTP over SSL with `smtp.gmail.com` on port 465. Never commit or log the App Password.
    - Show current IPOs, recent listing outcomes, and overall statistics in the email dashboard.
    - Link the email to the interactive Streamlit dashboard.
-   - Add Gmail API delivery.
+   - Add Gmail SMTP delivery over SSL using the Google App Password.
    - Include a local dry-run mode.
 
 7. **GitHub Actions**

@@ -1,121 +1,118 @@
-import base64
+import smtplib
 from email.message import EmailMessage
 
 import pytest
 
-from app.services.email_service import (
-    build_report_message,
-    fetch_google_access_token,
-    load_recipients,
-    send_report,
-)
+from app.services.email_service import build_report_message, send_report
 
 
-def test_load_recipients_reads_one_address_per_line_and_deduplicates(tmp_path):
-    recipients_file = tmp_path / "report_recipients.txt"
-    recipients_file.write_text(
-        "# Daily report recipients\nowner@example.com\n\nowner@example.com\nteam@example.com\n"
-    )
-
-    assert load_recipients(recipients_file) == ["owner@example.com", "team@example.com"]
-
-
-def test_load_recipients_rejects_invalid_addresses(tmp_path):
-    recipients_file = tmp_path / "report_recipients.txt"
-    recipients_file.write_text("not-an-email\n")
-
-    with pytest.raises(ValueError, match="Invalid recipient on line 1"):
-        load_recipients(recipients_file)
-
-
-def test_build_report_message_includes_plain_text_and_html():
+def test_build_report_message_includes_plain_text_html_and_inline_snapshot():
     message = build_report_message(
         sender="reports@example.com",
         recipient="owner@example.com",
         report="IPO Pulse Daily Report\nAlpha IPO",
+        html_report="<html><body><strong>Alpha IPO</strong></body></html>",
+        snapshot_png=b"png-bytes",
     )
 
     assert isinstance(message, EmailMessage)
-    assert message["Subject"] == "IPO Pulse Daily Dashboard"
+    assert message["Subject"] == "IPO Pulse Daily Report"
+    assert message["From"] == "reports@example.com"
+    assert message["To"] == "owner@example.com"
     assert message.get_body(preferencelist=("plain",)).get_content() == "IPO Pulse Daily Report\nAlpha IPO\n"
     html_body = message.get_body(preferencelist=("html",))
     assert html_body is not None
     assert "Alpha IPO" in html_body.get_content()
+    assert any(part.get_content_type() == "image/png" for part in message.walk())
 
 
-def test_fetch_google_access_token_uses_refresh_token(monkeypatch):
-    requests_seen = []
+def test_send_report_uses_gmail_smtp_ssl_with_credentials_from_arguments(monkeypatch):
+    smtp_calls = []
+    context = object()
 
-    class Response:
-        def raise_for_status(self):
-            pass
+    class FakeSMTP:
+        def __init__(self, host, port, *, context, timeout):
+            smtp_calls.append(("connect", host, port, context, timeout))
 
-        def json(self):
-            return {"access_token": "short-lived-access-token"}
+        def __enter__(self):
+            return self
 
-    def fake_post(url, data, timeout):
-        requests_seen.append((url, data, timeout))
-        return Response()
+        def __exit__(self, *_args):
+            return False
 
-    monkeypatch.setattr("app.services.email_service.requests.post", fake_post)
+        def login(self, username, password):
+            smtp_calls.append(("login", username, password))
 
-    token = fetch_google_access_token(
-        client_id="oauth-client-id",
-        client_secret="oauth-client-secret",
-        refresh_token="long-lived-refresh-token",
-    )
+        def send_message(self, message):
+            smtp_calls.append(("send", message))
 
-    assert token == "short-lived-access-token"
-    assert requests_seen[0][0] == "https://oauth2.googleapis.com/token"
-    assert requests_seen[0][1] == {
-        "client_id": "oauth-client-id",
-        "client_secret": "oauth-client-secret",
-        "refresh_token": "long-lived-refresh-token",
-        "grant_type": "refresh_token",
-    }
+    monkeypatch.setattr("app.services.email_service.ssl.create_default_context", lambda: context)
+    monkeypatch.setattr("app.services.email_service.smtplib.SMTP_SSL", FakeSMTP)
 
-
-def test_send_report_uses_gmail_api_and_fails_without_credentials(monkeypatch):
-    requests_seen = []
-
-    class Response:
-        def raise_for_status(self):
-            pass
-
-    def fake_post(url, headers, json, timeout):
-        requests_seen.append((url, headers, json, timeout))
-        return Response()
-
-    monkeypatch.setattr("app.services.email_service.requests.post", fake_post)
-    monkeypatch.setattr(
-        "app.services.email_service.fetch_google_access_token",
-        lambda *_args: "short-lived-access-token",
-    )
     send_report(
         report="IPO Pulse Daily Report",
         sender="reports@example.com",
-        client_id="oauth-client-id",
-        client_secret="oauth-client-secret",
-        refresh_token="long-lived-refresh-token",
+        app_password="abcd efgh ijkl mnop",
         recipient="owner@example.com",
+        html_report="<html><body>IPO Pulse</body></html>",
+        snapshot_png=b"png-bytes",
     )
 
-    assert len(requests_seen) == 1
-    url, headers, payload, timeout = requests_seen[0]
-    assert url == "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
-    assert headers["Authorization"] == "Bearer short-lived-access-token"
-    assert timeout == 30
-    message = base64.urlsafe_b64decode(payload["raw"])
-    assert b"To: owner@example.com" in message
-    assert b"Subject: IPO Pulse Daily Dashboard" in message
-    assert b"IPO Pulse Daily Report" in message
+    assert smtp_calls[0] == ("connect", "smtp.gmail.com", 465, context, 30)
+    assert smtp_calls[1] == ("login", "reports@example.com", "abcdefghijklmnop")
+    assert smtp_calls[2][0] == "send"
+    message = smtp_calls[2][1]
+    assert isinstance(message, EmailMessage)
+    assert message["To"] == "owner@example.com"
+    assert message["Subject"] == "IPO Pulse Daily Report"
 
-    with pytest.raises(ValueError, match="email credentials and recipient"):
+
+def test_send_report_fails_clearly_when_required_environment_values_are_missing():
+    with pytest.raises(ValueError, match="GMAIL_SENDER, GMAIL_RECIPIENT") as error:
         send_report(
             report="Report",
             sender="",
-            client_id="",
-            client_secret="",
-            refresh_token="",
+            app_password="never-print-this-password",
             recipient="",
         )
+
+    assert "never-print-this-password" not in str(error.value)
+
+
+def test_send_report_identifies_missing_app_password():
+    with pytest.raises(ValueError, match="GMAIL_APP_PASSWORD"):
+        send_report(
+            report="Report",
+            sender="reports@example.com",
+            app_password="",
+            recipient="owner@example.com",
+        )
+
+
+def test_send_report_does_not_expose_app_password_on_smtp_error(monkeypatch):
+    secret = "abcdefghijklmnop"
+
+    class FakeSMTP:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def login(self, *_args):
+            raise smtplib.SMTPAuthenticationError(535, b"authentication failed")
+
+    monkeypatch.setattr("app.services.email_service.smtplib.SMTP_SSL", FakeSMTP)
+
+    with pytest.raises(RuntimeError, match="Gmail SMTP could not send") as error:
+        send_report(
+            report="Report",
+            sender="reports@example.com",
+            app_password=secret,
+            recipient="owner@example.com",
+        )
+
+    assert secret not in str(error.value)

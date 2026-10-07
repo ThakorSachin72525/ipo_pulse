@@ -3,11 +3,9 @@
 from __future__ import annotations
 
 import argparse
-from pathlib import Path
-
 from app.config import Settings
 from app.repositories.supabase_repository import SupabaseRepository
-from app.services.email_service import load_recipients, send_report
+from app.services.email_service import send_report
 from app.services.report_service import (
     build_daily_report,
     build_dashboard_email_html,
@@ -20,7 +18,7 @@ def main() -> int:
     parser.add_argument(
         "--send",
         action="store_true",
-        help="send the dashboard email through the Gmail API; without this flag print its text fallback",
+        help="send the dashboard email through Gmail SMTP; without this flag print its text fallback",
     )
     args = parser.parse_args()
 
@@ -36,33 +34,15 @@ def main() -> int:
         print("\nDry run: no email sent.")
         return 0
 
-    oauth_credentials = (
-        settings.email_sender,
-        settings.google_oauth_client_id,
-        settings.google_oauth_client_secret,
-        settings.google_oauth_refresh_token,
+    send_report(
+        report=report,
+        sender=settings.gmail_sender or "",
+        app_password=settings.gmail_app_password or "",
+        recipient=settings.gmail_recipient or "",
+        html_report=html_report,
+        snapshot_png=snapshot_png,
     )
-    if not all(oauth_credentials):
-        raise RuntimeError(
-            "EMAIL_SENDER, GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, "
-            "and GOOGLE_OAUTH_REFRESH_TOKEN are required with --send"
-        )
-    recipient_file = Path(__file__).resolve().parents[1] / "config" / "report_recipients.txt"
-    recipients = load_recipients(recipient_file)
-    if not recipients:
-        raise RuntimeError(f"Add at least one recipient to {recipient_file}")
-    for recipient in recipients:
-        send_report(
-            report=report,
-            sender=settings.email_sender,
-            client_id=settings.google_oauth_client_id,
-            client_secret=settings.google_oauth_client_secret,
-            refresh_token=settings.google_oauth_refresh_token,
-            recipient=recipient,
-            html_report=html_report,
-            snapshot_png=snapshot_png,
-        )
-    print(f"Dashboard email sent to {len(recipients)} recipient(s)")
+    print("Dashboard email sent successfully.")
     return 0
 
 

@@ -2,6 +2,7 @@ import sys
 
 import pytest
 
+from app.config import Settings
 from app.services.report_service import build_daily_report
 from app.repositories.supabase_repository import SupabaseRepository
 from scripts import send_daily_report
@@ -91,10 +92,9 @@ def test_repository_builds_report_rows_from_latest_gmp_and_saved_results():
 
 def test_daily_report_command_defaults_to_dry_run(monkeypatch, capsys):
     class Settings:
-        email_sender = None
-        google_oauth_client_id = None
-        google_oauth_client_secret = None
-        google_oauth_refresh_token = None
+        gmail_sender = None
+        gmail_app_password = None
+        gmail_recipient = None
 
     class Repository:
         def get_daily_report_data(self):
@@ -119,18 +119,17 @@ def test_daily_report_command_defaults_to_dry_run(monkeypatch, capsys):
     assert "Dry run: no email sent." in output
 
 
-def test_send_flag_delivers_separate_messages_to_configured_recipients(monkeypatch, capsys):
+def test_send_flag_delivers_report_to_configured_recipient(monkeypatch, capsys):
     class Settings:
-        email_sender = "reports@example.com"
-        google_oauth_client_id = "oauth-client-id"
-        google_oauth_client_secret = "oauth-client-secret"
-        google_oauth_refresh_token = "long-lived-refresh-token"
+        gmail_sender = "reports@example.com"
+        gmail_app_password = "smtp-app-password"
+        gmail_recipient = "owner@example.com"
 
     class Repository:
         def get_daily_report_data(self):
             return ([], [])
 
-    sent_to = []
+    sent = []
     monkeypatch.setattr(sys, "argv", ["send_daily_report", "--send"])
     monkeypatch.setattr(send_daily_report.Settings, "from_env", lambda: Settings())
     monkeypatch.setattr(
@@ -140,15 +139,25 @@ def test_send_flag_delivers_separate_messages_to_configured_recipients(monkeypat
     )
     monkeypatch.setattr(
         send_daily_report,
-        "load_recipients",
-        lambda _path: ["first@example.com", "second@example.com"],
-    )
-    monkeypatch.setattr(
-        send_daily_report,
         "send_report",
-        lambda **kwargs: sent_to.append(kwargs["recipient"]),
+        lambda **kwargs: sent.append(kwargs),
     )
 
     assert send_daily_report.main() == 0
-    assert sent_to == ["first@example.com", "second@example.com"]
-    assert "2 recipient(s)" in capsys.readouterr().out
+    assert len(sent) == 1
+    assert sent[0]["sender"] == "reports@example.com"
+    assert sent[0]["app_password"] == "smtp-app-password"
+    assert sent[0]["recipient"] == "owner@example.com"
+    assert "sent successfully" in capsys.readouterr().out
+
+
+def test_settings_reads_gmail_smtp_values_from_environment(monkeypatch):
+    monkeypatch.setenv("GMAIL_SENDER", "sender@example.com")
+    monkeypatch.setenv("GMAIL_APP_PASSWORD", "app-password")
+    monkeypatch.setenv("GMAIL_RECIPIENT", "recipient@example.com")
+
+    settings = Settings.from_env()
+
+    assert settings.gmail_sender == "sender@example.com"
+    assert settings.gmail_app_password == "app-password"
+    assert settings.gmail_recipient == "recipient@example.com"

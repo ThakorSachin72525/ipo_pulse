@@ -11,8 +11,8 @@ Cloud-based IPO tracking and GMP prediction pipeline for Indian IPOs.
 | 3. Supabase persistence | Complete | Schema migration verified and live GitHub Actions ingestion wrote 14 IPO rows and 14 GMP observations |
 | 4. Prediction pipeline | Complete | Latest pre-listing GMP selection, prediction payload logic, and live persistence are implemented and validated |
 | 5. Listing accuracy | Validation queued | Reconciliation completed without throttling; no listed IPOs were eligible for real outcomes yet |
-| 6. Daily email dashboard | Complete | User confirmed the HTML dashboard and inline snapshot render correctly in Gmail |
-| 7. GitHub Actions automation | Validation queued | Updated to 7:00 AM IST; recent scheduled runs arrived hours late and failed at Gmail OAuth token refresh |
+| 6. Daily email dashboard | In progress | SMTP App Password delivery implemented; confirm a manual test email arrives and renders correctly |
+| 7. GitHub Actions automation | Validation queued | Updated to 7:00 AM IST; validate the new SMTP delivery in the manual report workflow |
 | 8. Dashboard | Complete | Deployed dashboard reads IPO Guru data through the versioned read-only Supabase policies |
 
 ## Goal
@@ -25,7 +25,7 @@ The system will:
 - Record the GMP-based prediction used for an IPO.
 - Store actual listing prices after an IPO lists.
 - Calculate prediction error and direction accuracy.
-- Send a daily dashboard email through the Gmail API.
+- Send a daily dashboard email through Gmail SMTP with a Google App Password.
 - Run automatically through GitHub Actions.
 
 GMP is treated as a prediction input, not as a guaranteed listing price.
@@ -150,7 +150,7 @@ Completion gate:
 
 Apply `supabase/migrations/002_prediction_schema.sql`, `003_listing_results_schema.sql`, and `004_ipo_guru_slug.sql` in order in the Supabase SQL Editor before running prediction ingestion or listing reconciliation.
 
-### Phase 6: Daily Email Dashboard - Complete
+### Phase 6: Daily Email Dashboard - In progress
 
 Deliverables:
 
@@ -159,23 +159,23 @@ Deliverables:
 - Dashboard-style HTML email with a link to the live Streamlit dashboard.
 - Inline PNG snapshot of the same dashboard data.
 - Plain-text email fallback.
-- Gmail API delivery.
+- Gmail SMTP delivery over SSL with a Google App Password.
 - Local dry-run mode.
 
 Current implementation:
 
 - Added a Supabase-backed report query for current GMP snapshots and recent listing results.
 - Added overall direction-accuracy and mean percentage-error statistics.
-- Added a dashboard-style HTML email with KPI cards, IPO and listing tables, an inline PNG snapshot, a live-dashboard link, and a plain-text fallback. Gmail accepted delivery to both configured recipients, and the user confirmed the visual rendering is correct.
+- Added a dashboard-style HTML email with KPI cards, IPO and listing tables, an inline PNG snapshot, a live-dashboard link, and a plain-text fallback. The user confirmed the Gmail rendering. Delivery now uses Gmail SMTP with an App Password; SMTP delivery still needs a manual validation run.
 - Added `python -m scripts.send_daily_report`; it prints a dry run by default and sends only with `--send`.
-- Maintains recipient addresses in `config/report_recipients.txt`, one address per line; delivery sends separate messages to protect recipient privacy.
-- Added tests for report data, MIME content, Gmail API delivery, and the no-send dry-run default.
-- Live database and Gmail delivery validation succeeded with configured secrets.
+- Reads the single report recipient from the `GMAIL_RECIPIENT` environment variable or GitHub Actions secret.
+- Added tests for report data, MIME content, Gmail SMTP delivery, and the no-send dry-run default.
+- Supabase report data and the email layout were previously validated. Validate the new SMTP delivery using the manual report workflow.
 
 Completion gate:
 
 - Dry-run output is readable without sending email.
-- The user confirmed that a delivered test email renders the dashboard layout correctly and opens the live Streamlit dashboard.
+- The user confirmed that a delivered test email renders the dashboard layout correctly and opens the live Streamlit dashboard. Confirm a report sent through Gmail SMTP.
 - Credentials are read only from environment variables or GitHub Secrets.
 
 ### Phase 7: GitHub Actions Automation - Validation queued
@@ -193,14 +193,14 @@ Current implementation:
 - Added `.github/workflows/daily-pipeline.yml` with schema verification, IPO Guru ingestion, listing reconciliation, and report generation.
 - Added manual dispatch with `send_report` defaulting to false, so manual validation prints a dry run without sending email.
 - Updated the daily schedule to `01:30 UTC` (7:00 AM IST) for the report pipeline. Full manual send and dry-run pipeline runs succeeded on `main` (runs `36271478502` and `36271608004`). The repeat ingestion returned the same 14 IPOs, 14 GMP observations, and 14 predictions without error.
-- Added concurrency protection and a GitHub Actions job summary. Added `.github/workflows/test-schedule.yml` and `schedule.py` as an isolated schedule diagnostic. Its manual run succeeded, but GitHub created no schedule run across three expected five-minute ticks; the diagnostic workflow is disabled to avoid unnecessary Actions usage. The production workflow later ran with event `schedule` on Sep 27 at 5:39 PM IST (run `36318032760`) and Sep 28 at 7:34 PM IST (run `36433230260`), far after its previous configured 11:50 AM IST time. More recent Oct 3–7 scheduled runs also started 5–8 hours late and failed while exchanging the Gmail OAuth refresh token (Google token endpoint HTTP 400); ingestion and reconciliation succeeded.
+- Added concurrency protection and a GitHub Actions job summary. Added `.github/workflows/test-schedule.yml` and `schedule.py` as an isolated schedule diagnostic. Its manual run succeeded, but GitHub created no schedule run across three expected five-minute ticks; the diagnostic workflow is disabled to avoid unnecessary Actions usage. The production workflow later ran with event `schedule` on Sep 27 at 5:39 PM IST (run `36318032760`) and Sep 28 at 7:34 PM IST (run `36433230260`), far after its previous configured 11:50 AM IST time. More recent Oct 3–7 scheduled runs also started 5–8 hours late and failed while exchanging the old Gmail OAuth refresh token (Google token endpoint HTTP 400); ingestion and reconciliation succeeded. The sender has since moved to Gmail SMTP and requires a new manual delivery check.
 - IPO Guru detail requests now use bounded `Retry-After` backoff when the provider returns HTTP 429.
 
 Completion gate:
 
 - Full manual send pipeline succeeds on the default branch.
 - Repeated ingestion succeeds with the same source rows.
-- Daily schedule is configured for 7:00 AM IST (`01:30 UTC`); GitHub has previously delayed scheduled events by hours, so punctual schedule validation remains open. Recent runs also fail during Gmail OAuth token refresh.
+- Daily schedule is configured for 7:00 AM IST (`01:30 UTC`); GitHub has previously delayed scheduled events by hours, so punctual schedule validation remains open. Historical runs failed during the now-removed Gmail OAuth token refresh; validate the SMTP delivery path.
 - Manual dry-run pipeline succeeds on the default branch.
 - GitHub creates scheduled runs for the diagnostic workflow when enabled.
 
@@ -238,33 +238,27 @@ Apply `supabase/migrations/005_dashboard_read_policies.sql` after migrations 001
 
 The dashboard remains read-only. The email contains a point-in-time visual summary and links to the interactive dashboard.
 
-## Secrets
+## GitHub Actions Secrets
 
-Current secret:
+Configure these repository secrets under **Settings → Secrets and variables → Actions**:
 
 - `IPO_API_KEY`
-
-Later secrets:
-
 - `SUPABASE_URL`
 - `SUPABASE_KEY`
-- `EMAIL_SENDER`
-- `GOOGLE_OAUTH_CLIENT_ID`
-- `GOOGLE_OAUTH_CLIENT_SECRET`
-- `GOOGLE_OAUTH_REFRESH_TOKEN`
+- `GMAIL_SENDER`
+- `GMAIL_APP_PASSWORD`
+- `GMAIL_RECIPIENT`
 
-Secrets belong in GitHub repository settings under **Settings → Secrets and variables → Actions**. They must not be committed to the repository.
-Recipient addresses are maintained in the tracked file `config/report_recipients.txt`, one per line. Edit and commit that file when the list changes; it is not an Actions secret.
-The sender address identifies the Gmail mailbox; the Gmail API uses the OAuth refresh token, not the mailbox password. Google can revoke refresh tokens, so reauthorization may occasionally be needed.
+`GMAIL_SENDER` must be the Gmail account that created the App Password. `GMAIL_RECIPIENT` is the single recipient for the daily report. Keep the App Password in GitHub Secrets; never commit it or print it in logs.
 
-## Google OAuth Setup
+## Gmail SMTP Setup
 
-1. In Google Cloud Console, create a project, enable the Gmail API, and configure the OAuth consent screen.
-2. Create an OAuth client. For OAuth Playground, use a Web application client and add `https://developers.google.com/oauthplayground` as an authorized redirect URI.
-3. Open Google OAuth Playground settings, select **Use your own OAuth credentials**, and enter the client ID and client secret.
-4. Authorize the scope `https://mail.google.com/` using the mailbox in `EMAIL_SENDER`, then exchange the authorization code for tokens. Keep the refresh token; the access token is short-lived and is fetched by the app when sending.
-5. Add `EMAIL_SENDER`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, and `GOOGLE_OAUTH_REFRESH_TOKEN` as repository Actions secrets.
-6. For an external OAuth consent screen, publish the app as required for long-lived refresh tokens. Google Testing mode may expire refresh tokens after seven days; restricted Gmail scopes may also require verification.
+1. Turn on 2-Step Verification for the Gmail sender account.
+2. In the Google Account security settings, create an App Password for IPO Pulse.
+3. Save the Gmail address as `GMAIL_SENDER`, the generated App Password as `GMAIL_APP_PASSWORD`, and the report destination as `GMAIL_RECIPIENT` in GitHub Actions Secrets.
+4. Use **Actions → Send Daily IPO Dashboard → Run workflow**. Leave `send` unchecked for a dry run; check it to send one live report to `GMAIL_RECIPIENT`.
+
+The app sends through `smtp.gmail.com` over SSL on port 465. It strips whitespace from the App Password in memory to accommodate Google's grouped display format. The App Password is not stored in the repository.
 
 ## Development Checks
 

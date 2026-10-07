@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Privacy Policy for IPO Pulse, including how Gmail OAuth data is used for daily report delivery.">
+  <meta name="description" content="Privacy Policy for IPO Pulse, including how Gmail data and SMTP credentials are used for daily report delivery.">
   <meta name="theme-color" content="#102a43">
   <title>Privacy Policy | IPO Pulse</title>
   <link rel="stylesheet" href="styles.css">
@@ -27,34 +27,34 @@
 
     <section class="legal-section">
       <h2>Google and Gmail information</h2>
-      <p>If the Gmail report feature is authorized, IPO Pulse uses Google OAuth credentials to obtain a temporary access token and send the daily IPO Pulse report through the Gmail API. The report is sent to the recipients configured by the project owner.</p>
-      <p>The current application code uses Gmail to send messages. It does not search, read, or analyze inbox messages, contacts, or attachments, and it does not retrieve Gmail profile information. The OAuth scope configured for this project is <code>https://mail.google.com/</code>, which is a broad Gmail permission. Google may therefore describe the authorization as allowing broad access to Gmail, even though the application's implemented use is the report-sending function.</p>
+      <p>If the daily email feature is configured, IPO Pulse authenticates to the configured Gmail account using a Google App Password and Gmail SMTP to send the report to the configured recipient.</p>
+      <p>The current application code uses SMTP to send messages only. It does not search, read, or analyze inbox messages, contacts, or attachments, and it does not retrieve Gmail profile information. The App Password is used only for SMTP authentication and sending the requested report.</p>
     </section>
 
     <section class="legal-section">
       <h2>How Google user data is used</h2>
-      <p>Google authorization is used only to support the intended IPO Pulse daily email report functionality. The application uses the authorized Gmail account to deliver a report assembled from IPO Pulse market data to the configured recipient addresses.</p>
+      <p>The Gmail App Password is used only to support the intended IPO Pulse daily email report functionality. The application uses the configured Gmail account to deliver a report assembled from IPO Pulse market data to the configured recipient.</p>
     </section>
 
     <section class="legal-section">
       <h2>Storage and security</h2>
-      <p>OAuth client credentials and the refresh token are stored as confidential GitHub Actions secrets. A short-lived access token is used by the workflow to call Google and is not intentionally saved by IPO Pulse. The application does not store Gmail inbox content or attachments. Gmail may retain sent messages in the authorized account according to that account's normal settings.</p>
+      <p>The Gmail sender address, App Password, and recipient are configured as GitHub Actions secrets. The App Password is treated as confidential and is not intentionally saved outside those secrets. SMTP authentication takes place during the workflow run; the application does not save Gmail credentials to its database. The application does not store Gmail inbox content or attachments. Gmail may retain sent messages in the authorized account according to that account's normal settings.</p>
       <p>IPO market data used by the dashboard and report is stored in Supabase. GitHub Actions runs the scheduled application and handles its configured secrets. No credentials should be placed in the public website or source code.</p>
     </section>
 
     <section class="legal-section">
       <h2>Sharing</h2>
-      <p>IPO Pulse does not sell Google user data or use it for advertising. Information is shared only as needed to provide the requested functionality: Google processes the email for delivery, GitHub Actions runs the application, and Supabase stores IPO Pulse market data. IPO Pulse does not share Google user data with other third parties for their own purposes.</p>
+      <p>IPO Pulse does not sell Gmail account data or use it for advertising. Information is shared only as needed to provide the requested functionality: Google processes the email for delivery, GitHub Actions runs the application, and Supabase stores IPO Pulse market data. IPO Pulse does not share Gmail account data with other third parties for their own purposes.</p>
     </section>
 
     <section class="legal-section">
       <h2>Retention and deletion</h2>
-      <p>GitHub Actions secrets are retained until the project owner changes or deletes them. Temporary access tokens are used during a workflow run and are not intentionally retained by the application. Sent reports may remain in Gmail until deleted from that account. IPO Pulse market data remains in Supabase until the project owner removes it. The project does not maintain a separate archive of Gmail messages.</p>
+      <p>GitHub Actions secrets are retained until the project owner changes or deletes them. The App Password is used during a workflow run and is not intentionally retained by the application. Sent reports may remain in Gmail until deleted from that account. IPO Pulse market data remains in Supabase until the project owner removes it. The project does not maintain a separate archive of Gmail messages.</p>
     </section>
 
     <section class="legal-section">
       <h2>Revoking Google access</h2>
-      <p>You can revoke the application's Google account access from your <a href="https://myaccount.google.com/permissions">Google Account third-party connections</a>. The project owner can also remove or replace the OAuth secrets in the repository's GitHub Actions settings. Revoking access prevents future report sends until authorization is restored.</p>
+      <p>You can revoke the App Password from your <a href="https://myaccount.google.com/apppasswords">Google Account App Passwords</a> settings. The project owner can also remove or replace the Gmail secrets in the repository's GitHub Actions settings. Revoking the App Password prevents future report sends until a new one is configured.</p>
     </section>
 
     <section class="legal-section">
