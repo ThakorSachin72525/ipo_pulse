@@ -93,9 +93,9 @@ def main() -> int:
                 repository.upsert_prediction(ipo_id, gmp_history_id, ipo, gmp)
                 prediction_count += 1
 
-    print(f"IPO records upserted: {ipo_count}")
-    print(f"GMP observations upserted: {gmp_count}")
-    print(f"Predictions upserted: {prediction_count}")
+    print(f"IPO records processed: {ipo_count}")
+    print(f"GMP observations recorded: {gmp_count}")
+    print(f"Predictions created or refreshed: {prediction_count}")
     return 0
 
 

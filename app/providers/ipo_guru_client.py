@@ -26,6 +26,16 @@ def parse_number(value: Any) -> float | None:
     return float(match.group()) if match else None
 
 
+def parse_integer(value: Any) -> int | None:
+    """Convert an API count to an integer when it is a whole number."""
+    number = parse_number(value)
+    if number is None:
+        return None
+    if number != int(number):
+        return None
+    return int(number)
+
+
 def normalize_gmp_record(record: Mapping[str, Any]) -> dict[str, Any]:
     """Normalize fields available from IPO Guru's GMP endpoint."""
     gmp = record.get("gmp")
@@ -34,7 +44,7 @@ def normalize_gmp_record(record: Mapping[str, Any]) -> dict[str, Any]:
         "name": record.get("name"),
         "issue_price": parse_number(record.get("issue_price")),
         "price_band": record.get("price_band"),
-        "lot_size": record.get("lot_size"),
+        "lot_size": parse_integer(record.get("lot_size")),
         "open_date": record.get("open_date"),
         "close_date": record.get("close_date"),
         "listing_date": record.get("listing_date"),
@@ -69,7 +79,7 @@ def normalize_ipo_detail(payload: Any) -> dict[str, Any]:
         "name": record.get("name"),
         "slug": record.get("slug"),
         "issue_price": parse_number(record.get("issue_price")),
-        "lot_size": record.get("lot_size"),
+        "lot_size": parse_integer(record.get("lot_size")),
         "listing_date": record.get("listing_date", listing.get("listing_date")),
         "actual_listing_price": parse_number(listing_price),
         "status": record.get("status"),
@@ -121,17 +131,20 @@ class IPOGuruClient:
             if response.status_code != 429 or attempt == 3:
                 break
             retry_after = response.headers.get("Retry-After")
+            delay = float(2**attempt)
             try:
                 delay = float(retry_after)
             except (TypeError, ValueError):
                 try:
                     retry_at = parsedate_to_datetime(retry_after)
+                except (TypeError, ValueError, OverflowError):
+                    retry_at = None
+                if isinstance(retry_at, datetime):
                     if retry_at.tzinfo is None:
                         retry_at = retry_at.replace(tzinfo=timezone.utc)
                     delay = max(0.0, (retry_at - datetime.now(timezone.utc)).total_seconds())
-                except (TypeError, ValueError, OverflowError):
-                    delay = float(2**attempt)
-            time.sleep(max(0.0, delay))
+            delay = min(max(0.0, delay), 120.0)
+            time.sleep(delay)
         if not response.ok:
             raise IPOGuruAPIError(
                 f"IPO Guru detail request failed with HTTP {response.status_code}"
