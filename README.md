@@ -1,6 +1,14 @@
 # IPO Pulse
 
 Cloud-based IPO tracking and GMP prediction pipeline for Indian IPOs.
+[![Daily Pipeline](https://github.com/ThakorSachin72525/ipo_pulse/actions/workflows/daily-pipeline.yml/badge.svg)](https://github.com/ThakorSachin72525/ipo_pulse/actions/workflows/daily-pipeline.yml)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-dashboard-ff4b4b.svg)](https://streamlit.io/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+**Live dashboard:** https://thakorsachin72525.github.io/ipo_pulse/
+**Configuration:** copy [`.env.example`](.env.example) to `.env` and fill in the required secrets.
+
 
 ## Current Status
 
