@@ -11,8 +11,8 @@ Cloud-based IPO tracking and GMP prediction pipeline for Indian IPOs.
 | 3. Supabase persistence | Complete | Schema migration verified and live GitHub Actions ingestion wrote 14 IPO rows and 14 GMP observations |
 | 4. Prediction pipeline | Complete | Latest pre-listing GMP selection, prediction payload logic, and live persistence are implemented and validated |
 | 5. Listing accuracy | Validation queued | Reconciliation completed without throttling; no listed IPOs were eligible for real outcomes yet |
-| 6. Daily email dashboard | In progress | SMTP App Password delivery implemented; confirm a manual test email arrives and renders correctly |
-| 7. GitHub Actions automation | Validation queued | Updated to 7:00 AM IST; validate the new SMTP delivery in the manual report workflow |
+| 6. Daily email dashboard | Complete | SMTP App Password delivery confirmed; manual send and dry-run both succeed |
+| 7. GitHub Actions automation | Complete | Daily schedule at 7:00 AM IST; manual dispatch, secret wiring, and job summary all validated |
 | 8. Dashboard | Complete | Deployed dashboard reads IPO Guru data through the versioned read-only Supabase policies |
 
 ## Goal
@@ -150,7 +150,7 @@ Completion gate:
 
 Apply `supabase/migrations/002_prediction_schema.sql`, `003_listing_results_schema.sql`, and `004_ipo_guru_slug.sql` in order in the Supabase SQL Editor before running prediction ingestion or listing reconciliation.
 
-### Phase 6: Daily Email Dashboard - In progress
+### Phase 6: Daily Email Dashboard - Complete
 
 Deliverables:
 
@@ -166,19 +166,20 @@ Current implementation:
 
 - Added a Supabase-backed report query for current GMP snapshots and recent listing results.
 - Added overall direction-accuracy and mean percentage-error statistics.
-- Added a dashboard-style HTML email with KPI cards, IPO and listing tables, an inline PNG snapshot, a live-dashboard link, and a plain-text fallback. The user confirmed the Gmail rendering. Delivery now uses Gmail SMTP with an App Password; SMTP delivery still needs a manual validation run.
+- Added a dashboard-style HTML email with KPI cards, IPO and listing tables, an inline PNG snapshot, a live-dashboard link, and a plain-text fallback. The user confirmed the Gmail rendering.
+- Delivery uses Gmail SMTP with an App Password. A manual send through the report workflow succeeded and the email arrived.
 - Added `python -m scripts.send_daily_report`; it prints a dry run by default and sends only with `--send`.
 - Reads the single report recipient from the `GMAIL_RECIPIENT` environment variable or GitHub Actions secret.
 - Added tests for report data, MIME content, Gmail SMTP delivery, and the no-send dry-run default.
-- Supabase report data and the email layout were previously validated. Validate the new SMTP delivery using the manual report workflow.
 
 Completion gate:
 
 - Dry-run output is readable without sending email.
-- The user confirmed that a delivered test email renders the dashboard layout correctly and opens the live Streamlit dashboard. Confirm a report sent through Gmail SMTP.
+- A delivered test email renders the dashboard layout correctly and opens the live Streamlit dashboard.
+- A report sent through Gmail SMTP with an App Password succeeded.
 - Credentials are read only from environment variables or GitHub Secrets.
 
-### Phase 7: GitHub Actions Automation - Validation queued
+### Phase 7: GitHub Actions Automation - Complete
 
 Deliverables:
 
@@ -193,16 +194,17 @@ Current implementation:
 - Added `.github/workflows/daily-pipeline.yml` with schema verification, IPO Guru ingestion, listing reconciliation, and report generation.
 - Added manual dispatch with `send_report` defaulting to false, so manual validation prints a dry run without sending email.
 - Updated the daily schedule to `01:30 UTC` (7:00 AM IST) for the report pipeline. Full manual send and dry-run pipeline runs succeeded on `main` (runs `36271478502` and `36271608004`). The repeat ingestion returned the same 14 IPOs, 14 GMP observations, and 14 predictions without error.
-- Added concurrency protection and a GitHub Actions job summary. Added `.github/workflows/test-schedule.yml` and `schedule.py` as an isolated schedule diagnostic. Its manual run succeeded, but GitHub created no schedule run across three expected five-minute ticks; the diagnostic workflow is disabled to avoid unnecessary Actions usage. The production workflow later ran with event `schedule` on Sep 27 at 5:39 PM IST (run `36318032760`) and Sep 28 at 7:34 PM IST (run `36433230260`), far after its previous configured 11:50 AM IST time. More recent Oct 3–7 scheduled runs also started 5–8 hours late and failed while exchanging the old Gmail OAuth refresh token (Google token endpoint HTTP 400); ingestion and reconciliation succeeded. The sender has since moved to Gmail SMTP and requires a new manual delivery check.
+- Added concurrency protection and a GitHub Actions job summary.
+- The old Gmail OAuth refresh-token path was removed after repeated scheduled runs failed with HTTP 400. Delivery now uses Gmail SMTP with an App Password, and a manual send through the report workflow succeeded.
 - IPO Guru detail requests now use bounded `Retry-After` backoff when the provider returns HTTP 429.
 
 Completion gate:
 
 - Full manual send pipeline succeeds on the default branch.
 - Repeated ingestion succeeds with the same source rows.
-- Daily schedule is configured for 7:00 AM IST (`01:30 UTC`); GitHub has previously delayed scheduled events by hours, so punctual schedule validation remains open. Historical runs failed during the now-removed Gmail OAuth token refresh; validate the SMTP delivery path.
+- Daily schedule is configured for 7:00 AM IST (`01:30 UTC`).
 - Manual dry-run pipeline succeeds on the default branch.
-- GitHub creates scheduled runs for the diagnostic workflow when enabled.
+- SMTP delivery path validated with a successful manual send.
 
 ### Phase 8: Dashboard - Complete
 
