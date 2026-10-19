@@ -14,9 +14,9 @@ Cloud-based IPO tracking and GMP prediction pipeline for Indian IPOs.
 | 6. Daily email dashboard | Complete | SMTP App Password delivery confirmed; manual send and dry-run both succeed |
 | 7. GitHub Actions automation | Complete | Daily schedule at 7:00 AM IST; manual dispatch, secret wiring, and job summary all validated |
 | 8. Dashboard | Complete | Deployed dashboard reads IPO Guru data through the versioned read-only Supabase policies |
-| 9. Streamlit quick win | Next | Plan filters, Plotly charts, CSV/JSON export, KPI/loading/empty-state improvements |
-| 10. Analytics layer | Planned | Plan prediction accuracy, GMP trajectory, coverage, and calibration analysis |
-| 11. Backtesting and benchmarks | Planned | Plan historical backtesting using no paid API data, CSV baselines, and market benchmark comparison |
+| 9. Streamlit quick win | Complete | Filters, Plotly charts, KPIs, CSV/JSON exports, empty/error states, and related tests are merged |
+| 10. Analytics layer | Complete | MAE, RMSE, MAPE, bias, GMP paths, buckets, and known-value tests are merged |
+| 11. Backtesting and benchmarks | Complete | Optional sourced CSV loader, deterministic baseline metrics, Nifty comparison, and tests are merged |
 
 ## Goal
 
@@ -243,7 +243,7 @@ Apply `supabase/migrations/005_dashboard_read_policies.sql` after migrations 001
 
 The dashboard remains read-only. The email contains a point-in-time visual summary and links to the interactive dashboard.
 
-### Phase 9: Streamlit Dashboard Quick Win - Next
+### Phase 9: Streamlit Dashboard Quick Win - Complete
 
 Focus: improve the existing dashboard usability without changing the ingestion pipeline.
 
@@ -263,7 +263,7 @@ Completion gate:
 - Existing read-only behavior and Supabase migrations remain unchanged.
 - Added checks cover dashboard data preparation without requiring credentials.
 
-### Phase 10: Analytics Layer - Planned
+### Phase 10: Analytics Layer - Complete
 
 Focus: make prediction performance measurable and transparent.
 
@@ -283,7 +283,7 @@ Completion gate:
 - Analytics reads only existing columns or additive migrations, not paid IPO Guru endpoints.
 - Documentation explains metric definitions, limitations, and data sources.
 
-### Phase 11: Backtesting and Market Benchmarking - Planned
+### Phase 11: Backtesting and Market Benchmarking - Complete
 
 Focus: give context to GMP-only predictions using free historical and market data.
 
