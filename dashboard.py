@@ -10,6 +10,14 @@ import streamlit as st
 
 from app.config import Settings
 from app.repositories.supabase_repository import SupabaseRepository
+from app.services.backtesting import calculate_baseline_metrics, load_baseline_csv
+from app.services.analytics import (
+    accuracy_by_bucket,
+    add_gmp_bucket_column,
+    add_gmp_context_to_results,
+    compute_accuracy_metrics,
+    summarize_gmp_history,
+)
 
 
 st.set_page_config(page_title="IPO Pulse", page_icon="📈", layout="wide")
@@ -196,6 +204,42 @@ else:
     st.dataframe(display_results, use_container_width=True, hide_index=True)
     st.metric("Mean percentage error (shown)", f"{mean_error:.2f}%" if mean_error is not None else "N/A")
 
+# ---- Advanced analytics --------------------------------------------------------
+st.subheader("Analytics layer")
+gmp_summary = summarize_gmp_history(filtered_gmp)
+analytics_results = add_gmp_bucket_column(add_gmp_context_to_results(filtered_results, gmp_summary))
+metrics = compute_accuracy_metrics(analytics_results)
+
+analytics_metrics = st.columns(4)
+analytics_metrics[0].metric("Samples", metrics["samples"])
+analytics_metrics[1].metric("MAE", f"{metrics['mae']:.2f}" if metrics["mae"] is not None else "N/A")
+analytics_metrics[2].metric("RMSE", f"{metrics['rmse']:.2f}" if metrics["rmse"] is not None else "N/A")
+analytics_metrics[3].metric("MAPE", f"{metrics['mape']:.2f}%" if metrics["mape"] is not None else "N/A")
+
+bias_cols = st.columns(2)
+bias_cols[0].metric("Direction hit rate (shown)", f"{metrics['direction_hit_rate']:.1f}%" if metrics["direction_hit_rate"] is not None else "N/A")
+bias_cols[1].metric("Mean signed error", f"{metrics['mean_signed_error']:.2f}" if metrics["mean_signed_error"] is not None else "N/A")
+
+if analytics_results.empty or "percentage_error" not in analytics_results:
+    st.info("No error distribution is available yet.")
+else:
+    histogram = px.histogram(analytics_results, x="percentage_error", nbins=20, title="Percentage error distribution")
+    st.plotly_chart(histogram, use_container_width=True)
+
+bucket_results = accuracy_by_bucket(analytics_results)
+if bucket_results.empty:
+    st.info("No GMP bucket accuracy is available yet.")
+else:
+    bucket_chart = px.bar(bucket_results, x="gmp_bucket", y="direction_hit_rate", text="samples", title="Direction accuracy by GMP bucket")
+    st.plotly_chart(bucket_chart, use_container_width=True)
+    st.dataframe(bucket_results, use_container_width=True, hide_index=True)
+
+with st.expander("GMP path summary"):
+    if gmp_summary.empty:
+        st.info("No GMP path data is available.")
+    else:
+        st.dataframe(gmp_summary, use_container_width=True, hide_index=True)
+
 # ---- Exports -------------------------------------------------------------------
 with st.expander("Export filtered data"):
     st.download_button(
@@ -216,6 +260,20 @@ with st.expander("Export filtered data"):
         file_name="ipo_pulse_gmp_history.csv",
         mime="text/csv",
     )
+
+with st.expander("Optional free-data backtesting baseline"):
+    baseline = load_baseline_csv()
+    if baseline.empty:
+        st.info("No baseline rows are configured. Add sourced rows to data/ipo_backtesting_baseline.csv to enable backtesting.")
+    else:
+        baseline_metrics = calculate_baseline_metrics(baseline)
+        backtest_cols = st.columns(4)
+        backtest_cols[0].metric("Baseline samples", baseline_metrics.samples)
+        backtest_cols[1].metric("Direction hit", f"{baseline_metrics.direction_hit_rate:.1f}%" if baseline_metrics.direction_hit_rate is not None else "N/A")
+        backtest_cols[2].metric("Mean return", f"{baseline_metrics.mean_actual_return:.2f}%" if baseline_metrics.mean_actual_return is not None else "N/A")
+        backtest_cols[3].metric("Correlation", f"{baseline_metrics.gmp_return_correlation:.3f}" if baseline_metrics.gmp_return_correlation is not None else "N/A")
+        if "source_url" in baseline:
+            st.dataframe(baseline, use_container_width=True, hide_index=True)
 
 with st.expander("Method notes"):
     st.write(

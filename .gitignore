@@ -278,3 +278,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Keep the documented backtesting baseline in source control.
+!data/ipo_backtesting_baseline.csv
