@@ -55,7 +55,7 @@ def load_baseline_csv(path: Path | None = None) -> pd.DataFrame:
     frame["actual_listing_price"] = pd.to_numeric(frame["actual_listing_price"], errors="coerce")
     frame["nifty_return_percent"] = pd.to_numeric(frame["nifty_return_percent"], errors="coerce")
 
-    price_basis = frame["issue_price"].where(frame["issue_price"].notna() & (frame["issue_price"] > 0), frame["actual_listing_price"])
+    price_basis = frame["issue_price"].where(frame["issue_price"].notna() & (frame["issue_price"] > 0))
     frame["actual_listing_return_percent"] = (frame["actual_listing_price"] - price_basis) / price_basis * 100
     return frame
 
