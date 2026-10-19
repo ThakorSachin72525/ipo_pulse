@@ -14,6 +14,9 @@ Cloud-based IPO tracking and GMP prediction pipeline for Indian IPOs.
 | 6. Daily email dashboard | Complete | SMTP App Password delivery confirmed; manual send and dry-run both succeed |
 | 7. GitHub Actions automation | Complete | Daily schedule at 7:00 AM IST; manual dispatch, secret wiring, and job summary all validated |
 | 8. Dashboard | Complete | Deployed dashboard reads IPO Guru data through the versioned read-only Supabase policies |
+| 9. Streamlit quick win | Next | Plan filters, Plotly charts, CSV/JSON export, KPI/loading/empty-state improvements |
+| 10. Analytics layer | Planned | Plan prediction accuracy, GMP trajectory, coverage, and calibration analysis |
+| 11. Backtesting and benchmarks | Planned | Plan historical backtesting using no paid API data, CSV baselines, and market benchmark comparison |
 
 ## Goal
 
@@ -239,6 +242,71 @@ SUPABASE_KEY = "..."
 Apply `supabase/migrations/005_dashboard_read_policies.sql` after migrations 001-004. It grants the unauthenticated `anon` role read-only access to the four dashboard tables. This makes dashboard data publicly readable, so the Streamlit app must use the publishable/anon key, never a Supabase secret/service-role key.
 
 The dashboard remains read-only. The email contains a point-in-time visual summary and links to the interactive dashboard.
+
+### Phase 9: Streamlit Dashboard Quick Win - Next
+
+Focus: improve the existing dashboard usability without changing the ingestion pipeline.
+
+Deliverables:
+
+- Add sidebar filters for IPO status, GMP range, and listing status.
+- Replace default line charts with Plotly charts for GMP history, predictions, and predicted-versus-actual returns.
+- Add CSV and JSON download controls for dashboard tables.
+- Add KPI cards for accuracy, coverage, and data freshness using fields already available in Supabase.
+- Replace blank states with explicit loading, empty-state, and error-state messages.
+- Add the smallest maintainable tests for repository-shaped dashboard data and pure chart inputs.
+
+Completion gate:
+
+- The dashboard runs end-to-end against Supabase using read-only credentials.
+- Filters, chart interactions, and downloads work locally.
+- Existing read-only behavior and Supabase migrations remain unchanged.
+- Added checks cover dashboard data preparation without requiring credentials.
+
+### Phase 10: Analytics Layer - Planned
+
+Focus: make prediction performance measurable and transparent.
+
+Deliverables:
+
+- Calculate direction hit rate, Mean Absolute Error, RMSE, MAPE, sample size, and prediction bias.
+- Add minimum GMP, maximum GMP, median GMP, final GMP, and GMP volatility for each IPO.
+- Group accuracy by GMP bucket, status, and available issue-size ranges.
+- Add a predicted-versus-actual return scatter chart and an error distribution view.
+- Expose analytics through reusable repository, service, or SQL-view helpers.
+- Document limitations when listed IPO coverage is small.
+
+Completion gate:
+
+- Analytics metrics match known-value unit tests.
+- Missing actual listing data is handled as "coverage pending", not an error.
+- Analytics reads only existing columns or additive migrations, not paid IPO Guru endpoints.
+- Documentation explains metric definitions, limitations, and data sources.
+
+### Phase 11: Backtesting and Market Benchmarking - Planned
+
+Focus: give context to GMP-only predictions using free historical and market data.
+
+Deliverables:
+
+- Define a source-documented historical IPO baseline dataset in CSV format under `data/`.
+- Add a free-data import or fixture-loading path that does not commit credentials.
+- Calculate historical direction accuracy, GMP-to-return correlation, and drawdown-like downside behavior, where data permits.
+- Optionally compare realized IPO return with Nifty 50 return over the listing window using a free market-data library.
+- Document source, observation date, and limitations for every externally sourced record.
+- Keep historical baseline import optional so users without the dataset can still run the pipeline and tests.
+
+Free-data constraint:
+
+- Use only public or locally sourced data plus existing IPO Guru Basic-plan fields.
+- Do not add Standard/Pro endpoints, paid services, or unpublished scraping against protected systems.
+- Mark any field that must be manually collected or remains unavailable.
+
+Completion gate:
+
+- Baseline schema, import path, and deterministic tests are documented and runnable.
+- Metrics degrade gracefully when benchmark data is unavailable.
+- All source limitations and missing fields are recorded in the requirements brief.
 
 ## GitHub Actions Secrets
 
