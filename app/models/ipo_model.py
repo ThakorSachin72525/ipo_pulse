@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import math
 from datetime import date
 from typing import Optional
 
@@ -19,6 +20,25 @@ class IPO:
     close_date: Optional[date] = None
     listing_date: Optional[date] = None
     actual_listing_price: Optional[float] = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.id, str) or not self.id.strip():
+            raise ValueError("IPO id is required")
+        if not isinstance(self.name, str) or not self.name.strip():
+            raise ValueError("IPO name is required")
+        if isinstance(self.issue_price, bool) or not isinstance(self.issue_price, (int, float)):
+            raise ValueError("issue_price must be a finite number")
+        if not math.isfinite(self.issue_price):
+            raise ValueError("issue_price must be a finite number")
+        if isinstance(self.lot_size, bool) or not isinstance(self.lot_size, int) or self.lot_size <= 0:
+            raise ValueError("lot_size must be a positive integer")
+        if self.actual_listing_price is not None:
+            if isinstance(self.actual_listing_price, bool) or not isinstance(
+                self.actual_listing_price, (int, float)
+            ):
+                raise ValueError("actual_listing_price must be a finite number")
+            if not math.isfinite(self.actual_listing_price):
+                raise ValueError("actual_listing_price must be a finite number when set")
 
     @property
     def investment(self) -> float:

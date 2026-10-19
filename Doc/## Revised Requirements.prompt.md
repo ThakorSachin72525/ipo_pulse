@@ -86,6 +86,29 @@ The existing PySide6 app remains operational but is not expanded during the init
    - Add IPO overview, GMP history, actual-versus-predicted views, and charts.
    - Deploy through Streamlit Community Cloud with `SUPABASE_URL` and `SUPABASE_KEY` configured as app secrets.
 
+9. **Streamlit Quick Win**
+   - Current status: Planned. The data model, Supabase read path, and core charts already exist; this phase focuses on dashboard usability.
+   - Add sidebar filters for status, GMP range, and listed-versus-pending outcomes.
+   - Replace default charts with Plotly visualizations and improve empty/error states.
+   - Add CSV and JSON downloads plus data freshness indicators.
+   - Add focused tests for dashboard data shaping and report-dataset behavior.
+
+10. **Analytics Layer**
+   - Current status: Planned. This builds on the completed prediction and accuracy pipeline.
+   - Calculate direction hit rate, MAE, RMSE, MAPE, bias, and outcome coverage.
+   - Calculate GMP minimum, maximum, median, final value, observation count, and volatility.
+   - Group accuracy by GMP bucket and any available issue-size range.
+   - Document predictive limitations while the listed-IPO sample remains small.
+   - Keep paid IPO Guru endpoints out of scope.
+
+11. **Backtesting and Benchmarking**
+   - Current status: Planned. Historical coverage depends on public or manually collected data.
+   - Add a documented CSV baseline schema for historical IPO GMP and listing outcomes.
+   - Add a deterministic import and analysis path that remains optional.
+   - Optionally compare realized IPO returns with a free market benchmark.
+   - Document source, date, and missing values for every historical record.
+   - Do not require cloud credentials for baseline tests.
+
 ## First Step
 
 We begin with the foundation in [app/models/ipo_model.py](app/models/ipo_model.py), configuration, and tests. The existing [app/services/ipo_service.py](app/services/ipo_service.py) will remain a compatibility boundary while the domain model becomes real.

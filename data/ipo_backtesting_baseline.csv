@@ -1,0 +1,2 @@
+# IPO baselines sourced from public data only. Empty rows are intentional; populate before running backtests.
+ipo_name,listing_date,issue_price,pre_listing_gmp_percent,actual_listing_price,nifty_return_percent,source_url

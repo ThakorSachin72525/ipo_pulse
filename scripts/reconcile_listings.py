@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 
 from app.config import Settings
 from app.models.ipo_model import IPO, PredictionRecord
-from app.providers.ipo_guru_client import IPOGuruClient, normalize_ipo_detail, parse_number
+from app.providers.ipo_guru_client import IPOGuruAPIError, IPOGuruClient, normalize_ipo_detail, parse_number
 from app.repositories.supabase_repository import SupabaseRepository
 
 
@@ -70,23 +70,43 @@ def reconcile_listings(client: IPOGuruClient, repository: SupabaseRepository) ->
 
         actual_listing_price = parse_number(candidate.get("listing_price"))
         if actual_listing_price is None or actual_listing_price <= 0:
-            detail = normalize_ipo_detail(client.fetch_ipo_detail(slug))
+            try:
+                detail = normalize_ipo_detail(client.fetch_ipo_detail(slug))
+            except IPOGuruAPIError as error:
+                print(
+                    f"Skipping IPO {candidate.get('ipo_name') or slug}: "
+                    f"listing detail unavailable ({error})"
+                )
+                continue
             actual_listing_price = detail.get("actual_listing_price")
             listing_date = parse_date(detail.get("listing_date")) or listing_date
         if actual_listing_price is None or listing_date is None:
             continue
 
-        repository.update_listing_data(
-            candidate["ipo_id"],
-            listing_date.isoformat(),
-            actual_listing_price,
-        )
+        try:
+            repository.update_listing_data(
+                candidate["ipo_id"],
+                listing_date.isoformat(),
+                actual_listing_price,
+            )
+        except Exception as error:  # noqa: BLE001
+            print(
+                f"Skipping IPO {candidate.get('ipo_name')}: "
+                f"listing data could not be updated ({error})"
+            )
+            continue
         ipo_count += 1
 
         for prediction_record in predictions:
-            prediction = prediction_from_record(prediction_record)
+            try:
+                prediction = prediction_from_record(prediction_record)
+            except ValueError as error:
+                print(f"Skipping prediction {prediction_record.get('prediction_id')}: {error}")
+                continue
+
             if prediction.gmp_date >= listing_date:
                 continue
+
             ipo = IPO(
                 id=candidate["ipo_id"],
                 name=candidate["ipo_name"],
@@ -95,12 +115,19 @@ def reconcile_listings(client: IPOGuruClient, repository: SupabaseRepository) ->
                 listing_date=listing_date,
                 actual_listing_price=actual_listing_price,
             )
-            repository.upsert_listing_result(
-                candidate["ipo_id"],
-                prediction_record["prediction_id"],
-                ipo,
-                prediction,
-            )
+            try:
+                repository.upsert_listing_result(
+                    candidate["ipo_id"],
+                    prediction_record["prediction_id"],
+                    ipo,
+                    prediction,
+                )
+            except Exception as error:  # noqa: BLE001
+                print(
+                    f"Skipping prediction {prediction_record.get('prediction_id')}: "
+                    f"result could not be stored ({error})"
+                )
+                continue
             result_count += 1
 
     return ipo_count, result_count
